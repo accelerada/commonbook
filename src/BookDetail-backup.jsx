@@ -158,20 +158,20 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
     setShowAddQuote(false)
     setMessage('Quote saved')
 
-    // // Run AI categorization in background
-    // const { data: aiResult, error: aiError } = await supabase.functions.invoke('categorize-quote', {
-    //     body: { quoteId: data.id }
-    // })
+    // Run AI categorization in background
+    const { data: aiResult, error: aiError } = await supabase.functions.invoke('categorize-quote', {
+        body: { quoteId: data.id }
+    })
 
-    // if (aiError) {
-    //     console.error('AI categorization error:', aiError)
-    //     return
-    // }
+    if (aiError) {
+        console.error('AI categorization error:', aiError)
+        return
+    }
 
-    // console.log('AI categorization result:', aiResult)
+    console.log('AI categorization result:', aiResult)
 
-    // // Refresh quotes so tags / mood / ai_status appear
-    // fetchQuotes()
+    // Refresh quotes so tags / mood / ai_status appear
+    fetchQuotes()
   }
 
   const handleDeleteQuote = async (quoteId) => {
@@ -378,7 +378,7 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
               style={styles.primaryPillSmall}
               onClick={() => setShowAddQuote((prev) => !prev)}
             >
-              + Add Quote
+              + Add New Quote
             </button>
           </div>
 
@@ -415,7 +415,7 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
                   style={styles.primaryPillSmall}
                   onClick={handleAddQuote}
                 >
-                  Add Quote
+                  Save Quote
                 </button>
               </div>
             </div>
@@ -430,6 +430,42 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
                   <div style={styles.quoteBar} />
                   <div style={styles.quoteContent}>
                     <div style={styles.quoteText}>"{quote.text}"</div>
+
+                        {quote.mood && (
+                            <div style={styles.quoteMood}>
+                            Mood: {quote.mood}
+                            </div>
+                        )}
+
+                        {quote.tags && quote.tags.length > 0 && (
+                            <div style={styles.tagsWrap}>
+                            {quote.tags.map((tag, index) => (
+                                <span key={index} style={styles.tagChip}>
+                                #{tag}
+                                </span>
+                            ))}
+                            </div>
+                        )}
+
+                        {quote.ai_status === 'quota_exceeded' && (
+                            <div style={styles.quotaNotice}>
+                            AI categorisation limit reached. You can still tag this quote manually or upgrade.
+                            </div>
+                        )}
+
+                        {quote.ai_status === 'processing' && (
+                            <div style={styles.processingNotice}>
+                            Categorising quote...
+                            </div>
+                        )}
+
+                        {quote.ai_status === 'failed' && (
+                            <div style={styles.processingNotice}>
+                            AI categorisation failed. You can still tag it manually.
+                            </div>
+                        )}
+
+
                     <div style={styles.quoteFooter}>
                       <span style={styles.quotePage}>
                         {quote.page_number != null ? `Page ${quote.page_number}` : 'Page not set'}
@@ -779,6 +815,38 @@ const styles = {
     lineHeight: 1.6,
     color: COLORS.text,
     marginBottom: '12px'
+  },
+  quoteMood: {
+    fontSize: '0.8rem',
+    color: COLORS.olive,
+    marginBottom: '8px',
+    fontWeight: 600
+  },
+  tagsWrap: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    marginBottom: '12px'
+  },
+  tagChip: {
+    padding: '5px 10px',
+    borderRadius: '999px',
+    background: COLORS.tagBg,
+    color: COLORS.olive,
+    fontSize: '0.75rem',
+    fontWeight: 600
+  },
+  quotaNotice: {
+    fontSize: '0.8rem',
+    color: '#A0522D',
+    marginBottom: '10px',
+    lineHeight: 1.4
+  },
+  processingNotice: {
+    fontSize: '0.8rem',
+    color: COLORS.textSoft,
+    marginBottom: '10px',
+    lineHeight: 1.4
   },
   quoteFooter: {
     display: 'flex',
