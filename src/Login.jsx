@@ -9,6 +9,9 @@ export default function Login() {
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [modalStep, setModalStep] = useState(1); // 1 = confirm, 2 = enter name
+  const [mode, setMode] = useState('signin') 
+  const [message, setMessage] = useState('') 
+
 
   const attemptLogin = async () => {
     setError('');
@@ -56,7 +59,7 @@ export default function Login() {
     setLoading(false);
   };
 
-  const handleEmailLogin = (e) => {
+  const handleEmailSignIn = (e) => {
     e.preventDefault();
     attemptLogin();
   };
