@@ -89,6 +89,7 @@ function App() {
   const accountMenuRef = useRef(null)
   const width = useWindowWidth()
   const isMobile = width < 640
+  const styles = makeStyles(isMobile, width)  // ← ADD HERE
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -220,7 +221,6 @@ function App() {
         default: return 0
       }
     })
-    const styles = makeStyles(isMobile)
 
     return sorted
   }, [books, genreFilter, statusFilter, ratingFilter, sortBy])
@@ -637,7 +637,7 @@ function App() {
   )
 }
 
-const makeStyles = (isMobile) => ({
+const makeStyles = (isMobile, width) => ({
   page: {
     minHeight: '100vh',
     background: COLORS.bg,
@@ -1015,6 +1015,6 @@ const makeStyles = (isMobile) => ({
     border: `1px solid ${COLORS.border}`,
     marginBottom: '10px'
   }
-}
+})
 
 export default App
