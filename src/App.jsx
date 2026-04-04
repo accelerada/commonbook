@@ -421,7 +421,7 @@ function App() {
         {/* ── Top Row ── */}
         <div style={styles.topRow}>
           <div>
-            <h1 style={styles.pageTitle}>My Reading Room</h1>
+            <h1 style={styles.pageTitle}>Commonbook</h1>
           </div>
           <div style={styles.userActions}>
             <div style={styles.accountMenuWrap} ref={accountMenuRef}>
@@ -642,7 +642,7 @@ const makeStyles = (isMobile, width) => ({
     minHeight: '100vh',
     background: COLORS.bg,
     color: COLORS.text,
-    fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif'
+    fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif'
   },
   loadingScreen: {
     minHeight: '100vh',

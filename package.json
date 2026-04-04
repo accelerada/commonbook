@@ -1,5 +1,6 @@
 {
-  "name": "reading-app",
+  "name": "commonbook",
+  "short_name": "Commonbook",
   "private": true,
   "version": "0.0.0",
   "type": "module",

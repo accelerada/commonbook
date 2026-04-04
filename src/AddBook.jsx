@@ -87,7 +87,7 @@ export default function AddBook({
         <button onClick={onBack} style={styles.backBtn}>← Back</button>
         <div style={styles.logo}>
           <span style={{ fontSize: '18px' }}>📖</span>
-          <span style={styles.logoText}>The Nook</span>
+          <span style={styles.logoText}>CommonBook</span>
         </div>
         <div style={{ width: '60px' }} />
       </div>

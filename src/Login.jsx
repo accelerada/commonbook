@@ -97,7 +97,7 @@ export default function Login() {
 
             {modalStep === 1 ? (
                 <>
-                <h2 style={styles.modalTitle}>New to The Nook?</h2>
+                <h2 style={styles.modalTitle}>New to CommonBook?</h2>
                 <p style={styles.modalBody}>
                     No account was found for <strong>{email}</strong>.<br />
                     Would you like to create one?
@@ -173,10 +173,15 @@ export default function Login() {
       {/* ── Logo + Title ── */}
       <div style={styles.header}>
         <span style={styles.icon}>📖</span>
-        <h1 style={styles.title}>The Nook</h1>
+        <h1 style={styles.title}>Commonbook</h1>
+        <p style={styles.subtitle}>A sanctuary for your favorite reads.</p>
+
+        {/* Icon */}
+        <div style={styles.iconWrap}>📚</div>
+
       </div>
 
-      <p style={styles.tagline}>Your quiet corner awaits.</p>
+      {/* <p style={styles.tagline}>Your quiet corner awaits.</p> */}
 
       {/* ── Social Buttons ── */}
       <div style={styles.socialRow}>
@@ -197,52 +202,68 @@ export default function Login() {
         <div style={styles.dividerLine} />
       </div>
 
-      {/* ── Form ── */}
-      <form onSubmit={handleEmailLogin} style={styles.form}>
-        <div style={styles.fieldGroup}>
-          <label style={styles.label}>EMAIL</label>
-          <input
-            type="email"
-            placeholder="archivist@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-          />
-        </div>
-
-        <div style={styles.fieldGroup}>
-          <label style={styles.label}>PASSWORD</label>
-          <input
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-          />
-          <div style={{ textAlign: 'right', marginTop: '6px' }}>
-            <span style={styles.forgotLink}>FORGOTTEN ACCESS?</span>
+         {/* Form */}
+        <form
+          onSubmit={mode === 'forgot' ? handleForgotPassword : handleEmailSignIn}
+          style={styles.form}
+        >
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>EMAIL</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="commonbook@example.com"
+              style={styles.input}
+              required
+            />
           </div>
-        </div>
 
-        {error && <p style={styles.error}>{error}</p>}
+          {mode === 'signin' && (
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>PASSWORD</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••"
+                style={styles.input}
+                required
+              />
+              <div style={styles.forgotRow}>
+                <button
+                  type="button"
+                  style={styles.forgotLink}
+                  onClick={() => { setMode('forgot'); setMessage('') }}
+                >
+                  FORGOTTEN ACCESS?
+                </button>
+              </div>
+            </div>
+          )}
 
-        {/* ── Door + Submit ── */}
-        <div style={styles.submitArea}>
-          <div
-            onClick={attemptLogin}
-            style={{ cursor: 'pointer' }}
-            role="button"
-            aria-label="Step inside"
-          >
-            <DoorIcon />
-          </div>
+          {message && (
+            <p style={styles.message}>{message}</p>
+          )}
+
           <button type="submit" style={styles.submitBtn} disabled={loading}>
-            {loading ? 'OPENING...' : 'STEP INSIDE'}
+            {loading ? 'LOADING...' : mode === 'forgot' ? 'SEND RESET LINK' : 'START EXPLORING'}
           </button>
-        </div>
-      </form>
-    </div>
-  );
+
+          {mode === 'forgot' && (
+            <button
+              type="button"
+              style={styles.backLink}
+              onClick={() => { setMode('signin'); setMessage('') }}
+            >
+              Back to sign in
+            </button>
+          )}
+        </form>
+
+        <p style={styles.footer}>Welcome back to your personal sanctuary.</p>
+      </div>
+  )
 }
 
 // ── Styles ───────────────────────────────────────────────
@@ -254,7 +275,7 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     padding: '60px 32px 40px',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
   },
   // Modal overlay
   overlay: {
@@ -274,7 +295,7 @@ const styles = {
     maxWidth: '340px',
     textAlign: 'center',
     boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
     boxSizing: 'border-box',   // ✅ add this
   },
   modalIcon: {
@@ -282,7 +303,7 @@ const styles = {
     marginBottom: '12px',
   },
   modalTitle: {
-    fontFamily: "'Lora', Georgia, serif",
+    fontFamily: "'Newsreader', Georgia, serif",
     fontStyle: 'italic',
     fontWeight: 400,
     fontSize: '24px',
@@ -334,7 +355,7 @@ const styles = {
   },
   icon: { fontSize: '36px' },
   title: {
-    fontFamily: "'Lora', Georgia, serif",
+    fontFamily: "'Newsreader', Georgia, serif",
     fontStyle: 'italic',
     fontWeight: 400,
     fontSize: '38px',
@@ -426,7 +447,7 @@ const styles = {
     backgroundColor: '#fff',
     outline: 'none',
     color: '#1a1a1a',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
   },
   forgotLink: {
     fontSize: '10px',

@@ -229,7 +229,7 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
 
       {/* Sticky Header */}
       <div style={styles.header}>
-        <button onClick={onBack} style={styles.backButton}>← The Nook</button>
+        <button onClick={onBack} style={styles.backButton}>← CommonBook</button>
         <div style={styles.avatarCircle}>
           {session?.user?.user_metadata?.avatar_url ? (
             <img src={session.user.user_metadata.avatar_url} alt="avatar" style={styles.avatarImg} />
