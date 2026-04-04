@@ -58,6 +58,16 @@ const SORT_PILL_LABELS = {
 
 const STATUS_OPTIONS = ['All Status', 'Not Started', 'Reading', 'Completed']
 
+const useWindowWidth = () => {
+  const [width, setWidth] = useState(window.innerWidth)
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  return width
+}
+
 function App() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -77,6 +87,8 @@ function App() {
   const [pendingBooks, setPendingBooks] = useState([])
   const dropdownRef = useRef(null)
   const accountMenuRef = useRef(null)
+  const width = useWindowWidth()
+  const isMobile = width < 640
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -208,6 +220,8 @@ function App() {
         default: return 0
       }
     })
+    const styles = makeStyles(isMobile)
+
     return sorted
   }, [books, genreFilter, statusFilter, ratingFilter, sortBy])
 
@@ -589,7 +603,11 @@ function App() {
                         {/* {renderStars(book.rating)} */}
                         <div style={styles.progressWrap}>
                           <div style={styles.progressArcBox}>
-                            <svg width="160" height="60" viewBox="0 0 160 60">
+                            <svg 
+                              width={isMobile ? "120" : "160"}
+                              height={isMobile ? "45" : "60"}
+                              viewBox="0 0 160 60"
+                            >
                               <path d="M 10 70 A 70 60 0 0 1 150 60" fill="none"
                                 stroke={COLORS.gold} strokeWidth="6" strokeLinecap="round" />
                               <path d="M 10 70 A 70 60 0 0 1 150 60" fill="none"
@@ -619,7 +637,7 @@ function App() {
   )
 }
 
-const styles = {
+const makeStyles = (isMobile) => ({
   page: {
     minHeight: '100vh',
     background: COLORS.bg,
@@ -643,7 +661,7 @@ const styles = {
   appShell: {
     maxWidth: '1280px',
     margin: '0 auto',
-    padding: '22px 24px 40px',
+    padding: isMobile ? '16px 12px 40px' : '22px 24px 40px',
     boxSizing: 'border-box',
     width: '100%',
   },
@@ -657,7 +675,7 @@ const styles = {
   },
   pageTitle: {
     margin: '0 0 4px',
-    fontSize: '2.2rem',
+    fontSize: isMobile ? '1.5rem' : '2.2rem',
     lineHeight: 1.05,
     letterSpacing: '-0.03em'
   },
@@ -722,6 +740,7 @@ const styles = {
   },
   toolbar: {
     display: 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: '14px',
@@ -759,14 +778,18 @@ const styles = {
   },
   filterWrap: {
     display: 'flex',
-    gap: '10px',
-    flexWrap: 'wrap',
+    gap: '8px',
+    flexWrap: isMobile ? 'nowrap' : 'wrap',
+    overflowX: isMobile ? 'auto' : 'visible',
+    width: isMobile ? '100%' : 'auto',
+    paddingBottom: isMobile ? '4px' : '0',
     position: 'relative',
     zIndex: 30
+
   },
   dropdownWrap: { position: 'relative' },
   filterButton: {
-    width: '160px',
+    width: isMobile ? '120px' : '160px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -775,13 +798,13 @@ const styles = {
     background: COLORS.cardBg,
     color: COLORS.text,
     borderRadius: '999px',
-    padding: '8px 16px',
-    fontSize: '0.95rem',
+    padding: '8px 14px',
+    fontSize: isMobile ? '0.82rem' : '0.95rem',
     outline: 'none',
     cursor: 'pointer'
   },
   filterButtonWide: {
-    width: '160px',
+    width: isMobile ? '120px' : '160px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -790,8 +813,8 @@ const styles = {
     background: COLORS.cardBg,
     color: COLORS.text,
     borderRadius: '999px',
-    padding: '8px 16px',
-    fontSize: '0.95rem',
+    padding: '8px 14px',
+    fontSize: isMobile ? '0.82rem' : '0.95rem',
     outline: 'none',
     cursor: 'pointer'
   },
@@ -881,9 +904,14 @@ const styles = {
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 300px)',
-    gap: '22px 24px',
-    justifyContent: 'center'
+    gridTemplateColumns: isMobile
+      ? 'repeat(2, 1fr)'
+      : width < 1024
+        ? 'repeat(2, minmax(240px, 300px))'
+        : 'repeat(3, 300px)',
+    gap: isMobile ? '12px' : '22px 24px',
+    justifyContent: 'center',
+    width: '100%',
   },
   card: {
     display: 'flex',
@@ -898,13 +926,13 @@ const styles = {
     boxSizing: 'border-box',
   },
   coverPanel: {
-    height: '200px',
+    height: isMobile ? '130px' : '200px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     marginBottom: '3px',
-    padding: '8px'
+    padding: isMobile ? '6px' : '8px'
   },
   cover: {
     maxWidth: '100%',
@@ -917,7 +945,7 @@ const styles = {
   },
   coverPlaceholder: { fontSize: '2rem', color: COLORS.textSoft },
   cardTitle: {
-    fontSize: '1.1rem',
+    fontSize: isMobile ? '0.82rem' : '1.1rem',
     fontWeight: 500,
     color: COLORS.text,
     marginBottom: '2px',
@@ -925,7 +953,7 @@ const styles = {
     textAlign: 'center'
   },
   cardAuthor: {
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.75rem' : '1rem',
     fontWeight: 400,
     color: COLORS.textSoft,
     marginBottom: '6px',
@@ -942,8 +970,8 @@ const styles = {
   progressWrap: { display: 'flex', justifyContent: 'center', marginBottom: '12px' },
   progressArcBox: {
     position: 'relative',
-    width: '160px',
-    height: '70px',
+    width: isMobile ? '120px' : '160px',
+    height: isMobile ? '52px' : '70px',
     display: 'flex',
     justifyContent: 'center'
   },
