@@ -4,6 +4,8 @@ import BookDetail from './BookDetail'
 import Login from './Login'
 import AddBook from './AddBook'
 import { COLORS } from './colors'
+import { FONTS, TYPE } from './theme'
+
 
 const RATING_OPTIONS = [
   { value: 'all', label: 'All Ratings' },
@@ -324,7 +326,7 @@ function App() {
         {[0, 1, 2, 3, 4].map((index) => {
           let color = '#D0CAC1'
           if (index < full) color = COLORS.gold
-          else if (index === full && half) color = COLORS.oliveSoft
+          else if (index === full && half) color = COLORS.textFaint
           return <span key={index} style={{ ...styles.cardStar, color }}>★</span>
         })}
       </div>
@@ -537,9 +539,9 @@ function App() {
                           viewBox="0 0 160 60"
                         >
                           <path d="M 10 70 A 70 60 0 0 1 150 60" fill="none"
-                            stroke={COLORS.gold} strokeWidth="6" strokeLinecap="round" />
+                            stroke={COLORS.progressTrack} strokeWidth="2" strokeLinecap="round" />
                           <path d="M 10 70 A 70 60 0 0 1 150 60" fill="none"
-                            stroke={COLORS.olive} strokeWidth="6" strokeLinecap="round"
+                            stroke={COLORS.progressFill} strokeWidth="1" strokeLinecap="round"
                             strokeDasharray={`${strokeDash} ${circumference}`} />
                         </svg>
                         <div style={styles.progressTextOverlay}>
@@ -597,7 +599,7 @@ function App() {
                   style={{
                     ...styles.accountDropdownItem,
                     backgroundColor: isSignOutHovered ? COLORS.tagBg : 'transparent',
-                    color: isSignOutHovered ? COLORS.olive : COLORS.text
+                    color: isSignOutHovered ? COLORS.accent : COLORS.text
                   }}
                 >
                   Sign out
@@ -617,6 +619,7 @@ function App() {
 
       {/* ── Fixed Bottom Tab Bar ── */}
       <nav style={styles.tabBar}>
+        <div style={styles.tabBarInner}>
         {[
           { key: 'home',    label: 'HOME',     Icon: HomeIcon },
           { key: 'library', label: 'LIBRARY',  Icon: LibraryIcon },
@@ -630,7 +633,7 @@ function App() {
               type="button"
               style={{
                 ...styles.tabItem,
-                color: isActive ? COLORS.olive : COLORS.text,
+                color: isActive ? COLORS.accent : COLORS.text,
                 opacity: isActive ? 1 : 0.45,
               }}
               onClick={() => setActiveTab(key)}
@@ -638,7 +641,7 @@ function App() {
               <Icon active={isActive} />
               <span style={{
                 ...styles.tabLabel,
-                color: isActive ? COLORS.olive : COLORS.text,
+                color: isActive ? COLORS.accent : COLORS.text,
                 fontWeight: isActive ? 700 : 500,
               }}>
                 {label}
@@ -646,6 +649,7 @@ function App() {
             </button>
           )
         })}
+        </div>
       </nav>
     </div>
   )
@@ -655,7 +659,7 @@ function App() {
 function HomeIcon({ active }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24"
-      fill={active ? COLORS.olive : COLORS.text}>
+      fill={active ? COLORS.accent : COLORS.text}>
       <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
     </svg>
   )
@@ -664,7 +668,7 @@ function HomeIcon({ active }) {
 function LibraryIcon({ active }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24"
-      fill={active ? COLORS.olive : COLORS.text}>
+      fill={active ? COLORS.accent : COLORS.text}>
       <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
     </svg>
   )
@@ -673,7 +677,7 @@ function LibraryIcon({ active }) {
 function AddBookIcon({ active }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24"
-      fill={active ? COLORS.olive : COLORS.text}>
+      fill={active ? COLORS.accent : COLORS.text}>
       <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
     </svg>
   )
@@ -682,7 +686,7 @@ function AddBookIcon({ active }) {
 function QuotesIcon({ active }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24"
-      fill={active ? COLORS.olive : COLORS.text}>
+      fill={active ? COLORS.accent : COLORS.text}>
       <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>
     </svg>
   )
@@ -694,7 +698,7 @@ const makeStyles = (isMobile, width) => ({
     minHeight: '100vh',
     background: COLORS.bg,
     color: COLORS.text,
-    fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
+    fontFamily: FONTS.body,
     paddingBottom: '80px', // room for fixed tab bar
   },
   loadingScreen: {
@@ -712,7 +716,7 @@ const makeStyles = (isMobile, width) => ({
     color: COLORS.text
   },
   appShell: {
-    maxWidth: '1280px',
+    maxWidth: '1600px',
     margin: '0 auto',
     padding: isMobile ? '16px 12px 24px' : '22px 24px 24px',
     boxSizing: 'border-box',
@@ -799,7 +803,7 @@ const makeStyles = (isMobile, width) => ({
     WebkitAppearance: 'none'
   },
   alignedContent: {
-    width: isMobile ? '100%' : 'calc(3 * 300px + 2 * 24px)', // = 948px, exact grid width
+    width: '100%',
     margin: '0 auto',  // centres the whole block
   },
   filterWrap: {
@@ -886,7 +890,7 @@ const makeStyles = (isMobile, width) => ({
   },
   dropdownItemActive: {
     background: COLORS.tagBg,
-    color: COLORS.olive,
+    color: COLORS.accent,
   },
   ratingOptionRow: {
     display: 'flex',
@@ -931,13 +935,26 @@ const makeStyles = (isMobile, width) => ({
     justifyContent: 'center',
     width: '100%',
   },
+  // grid: {
+  //   display: 'grid',
+  //   gridTemplateColumns: isMobile
+  //     ? 'repeat(2, 1fr)'
+  //     : width < 1024
+  //       ? 'repeat(2, 1fr)'
+  //       : 'repeat(3, 1fr)',
+  //   gap: isMobile ? '12px' : '22px 24px',
+  //   justifyContent: 'center',
+  //   width: '100%',
+  // },
   grid: {
     display: 'grid',
     gridTemplateColumns: isMobile
       ? 'repeat(2, 1fr)'
-      : width < 1024
-        ? 'repeat(2, minmax(240px, 300px))'
-        : 'repeat(3, 300px)',
+      : width < 768
+        ? 'repeat(2, 1fr)'
+        : width < 1100
+          ? 'repeat(3, 1fr)'
+          : 'repeat(4, 1fr)',    // ← adds a 4th column on wide screens
     gap: isMobile ? '12px' : '22px 24px',
     justifyContent: 'center',
     width: '100%',
@@ -1060,11 +1077,21 @@ const makeStyles = (isMobile, width) => ({
     right: 0,
     backgroundColor: COLORS.naviBg,
     borderTop: `1px solid ${COLORS.border}`,
+    // display: 'flex',
+    // justifyContent: 'space-around',
+    // alignItems: 'center',
+    // padding: '8px 0 16px',
+    zIndex: 200,
+  },
+  tabBarInner: {
+    maxWidth: '1280px',       // matches appShell
+    margin: '0 auto',
     display: 'flex',
     justifyContent: 'space-around',
     alignItems: 'center',
     padding: '8px 0 16px',
-    zIndex: 200,
+    width: '100%',
+    boxSizing: 'border-box',
   },
   tabItem: {
     display: 'flex',
@@ -1076,7 +1103,7 @@ const makeStyles = (isMobile, width) => ({
     cursor: 'pointer',
     padding: '4px 12px',
     minWidth: '60px',
-    fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
+    fontFamily: FONTS.body,
   },
   tabLabel: {
     fontSize: '11px',

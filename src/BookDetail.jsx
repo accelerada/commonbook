@@ -3,6 +3,16 @@ import { supabase } from './supabaseClient'
 import { COLORS } from './colors';
 import { FONTS, TYPE } from './theme'
 
+const useWindowWidth = () => {
+  const [width, setWidth] = useState(window.innerWidth)
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  return width
+}
+
 // const COLORS = {
 //   bg: '#fbf9f4',
 //   surface: '#FCFAF6',
@@ -22,6 +32,8 @@ import { FONTS, TYPE } from './theme'
 
 
 function BookDetail({ book, session, onBack, onBookUpdated }) {
+  const viewWidth = useWindowWidth()
+  const isMobile = viewWidth < 640
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -235,13 +247,18 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
 
       {/* Sticky Header */}
       <div style={styles.header}>
-        <button onClick={onBack} style={styles.backButton}>← CommonBook</button>
-        <div style={styles.avatarCircle}>
-          {session?.user?.user_metadata?.avatar_url ? (
-            <img src={session.user.user_metadata.avatar_url} alt="avatar" style={styles.avatarImg} />
-          ) : (
-            <span style={{ fontSize: '0.85rem', color: COLORS.textSoft }}>👤</span>
-          )}
+        <div style={{ ...styles.headerInner, padding: isMobile ? '16px 12px' : '22px 24px' }}>
+          <button onClick={onBack} style={styles.backButton}>
+            <span className="material-symbols-outlined" style={styles.logoIcon}>menu_book</span>
+            <span style={styles.logoText}>CommonBook</span>
+          </button>
+          <div style={styles.avatarCircle}>
+            {session?.user?.user_metadata?.avatar_url ? (
+              <img src={session.user.user_metadata.avatar_url} alt="avatar" style={styles.avatarImg} />
+            ) : (
+              <span style={{ fontSize: '0.85rem', color: COLORS.textSoft }}>👤</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -453,8 +470,8 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
           )}
         </section>
 
-        {/* Spacer for sticky bottom bar */}
-        <div style={{ height: '80px' }} />
+        {/* Spacer for action bar + nav bar */}
+        <div style={{ height: '168px' }} />
       </div>
 
       {/* Sticky Bottom Bar */}
@@ -509,22 +526,38 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 10,
+    background: COLORS.bg,
+    borderBottom: `1px solid ${COLORS.border}`,
+  },
+  headerInner: {
+    maxWidth: '1600px',
+    margin: '0 auto',
+    width: '100%',
+    boxSizing: 'border-box',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '12px 20px',
-    background: COLORS.bg,
-    borderBottom: `1px solid ${COLORS.border}`
   },
   backButton: {
     border: 'none',
     background: 'transparent',
-    color: COLORS.text,
-    fontSize: '0.95rem',
-    fontWeight: 600,
     cursor: 'pointer',
     padding: 0,
-    letterSpacing: '-0.01em'
+    display: 'flex',
+    alignItems: 'center',
+    gap: '7px',
+  },
+  logoIcon: {
+    fontSize: '24px',
+    color: COLORS.accent,
+    fontVariationSettings: "'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24",
+  },
+  logoText: {
+    fontFamily: FONTS.display,
+    fontStyle: 'italic',
+    fontSize: '24px',
+    fontWeight: 700,
+    color: COLORS.commonbookLogo,
   },
   avatarCircle: {
     width: '34px',
@@ -553,7 +586,7 @@ const styles = {
     padding: '12px 14px',
     borderRadius: '14px',
     border: `1px solid ${COLORS.border}`,
-    background: '#F6F2EA',
+    background: COLORS.messageBg,
     color: COLORS.text,
     fontSize: '0.9rem'
   },
@@ -615,7 +648,7 @@ const styles = {
     height: 'auto',
     objectFit: 'contain',
     display: 'block',
-    boxShadow: '0px 7px 6px rgba(0, 0, 0, 0.3), -3px 3px 8px rgba(0, 0, 0, 0.12)'
+    boxShadow: COLORS.shadowCover
   },
   coverFallback: {
     fontSize: '2.2rem',
@@ -896,16 +929,15 @@ const styles = {
   // ── Sticky bottom bar ──────────────────────────────────
   bottomBar: {
     position: 'fixed',
-    bottom: 0,
+    bottom: '80px',
     left: 0,
     right: 0,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     gap: '12px',
-    padding: '12px 20px',
+    padding: '16px 20px',
     background: COLORS.bg,
-    borderTop: `1px solid ${COLORS.border}`,
     zIndex: 10
   },
   primaryPill: {

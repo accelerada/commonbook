@@ -2,6 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { FONTS, TYPE } from './theme'
 import { COLORS } from './colors';
 
+const useWindowWidth = () => {
+  const [width, setWidth] = useState(window.innerWidth)
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  return width
+}
 
 export default function AddBook({
   isbn, setIsbn,
@@ -13,6 +22,8 @@ export default function AddBook({
   const [scanning, setScanning] = useState(false);
   const [inputMode, setInputMode] = useState('isbn');
   const [scanError, setScanError] = useState('');
+  const viewWidth = useWindowWidth();
+  const isMobile = viewWidth < 640;
 
   useEffect(() => {
     return () => {
@@ -35,6 +46,7 @@ export default function AddBook({
           setIsbn(decodedText);
           html5Qrcode.stop();
           setScanning(false);
+          onSearch(decodedText);
         },
         () => {}
       );
@@ -54,30 +66,31 @@ export default function AddBook({
   if (pendingBooks && pendingBooks.length > 0) {
     return (
       <div style={styles.container}>
-        
-        <button onClick={() => setPendingBooks([])} style={styles.backBtn}>← Back</button>
-        <p style={styles.label}>SELECT A BOOK</p>
-        <h1 style={styles.heading}>Which one<br />is it?</h1>
-        {pendingBooks.map((book, i) => (
-          <div key={i} style={styles.resultCard} onClick={() => onConfirm(book)}>
-            {book.cover_image_url ? (
-              <img
-                src={book.cover_image_url}
-                alt={book.title}
-                style={styles.resultCover}
-              />
-            ) : (
-              <div style={styles.resultCoverPlaceholder}>📖</div>
-            )}
-            <div style={styles.resultInfo}>
-              <p style={styles.resultTitle}>{book.title}</p>
-              <p style={styles.resultAuthor}>{book.author}</p>
-              <p style={styles.resultMeta}>
-                {book.year_published} · {book.total_pages ? `${book.total_pages} pages` : 'Pages unknown'}
-              </p>
+        <div style={styles.inner}>
+          <button onClick={() => setPendingBooks([])} style={styles.backBtn}>← Back</button>
+          <p style={styles.label}>SELECT A BOOK</p>
+          <h1 style={styles.heading}>Which one<br />is it?</h1>
+          {pendingBooks.map((book, i) => (
+            <div key={i} style={styles.resultCard} onClick={() => onConfirm(book)}>
+              {book.cover_image_url ? (
+                <img
+                  src={book.cover_image_url}
+                  alt={book.title}
+                  style={styles.resultCover}
+                />
+              ) : (
+                <div style={styles.resultCoverPlaceholder}>📖</div>
+              )}
+              <div style={styles.resultInfo}>
+                <p style={styles.resultTitle}>{book.title}</p>
+                <p style={styles.resultAuthor}>{book.author}</p>
+                <p style={styles.resultMeta}>
+                  {book.year_published} · {book.total_pages ? `${book.total_pages} pages` : 'Pages unknown'}
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
@@ -85,17 +98,18 @@ export default function AddBook({
   // ── Main add book screen ────────────────────────────
   return (
     <div style={styles.container}>
-      <div style={styles.inner}>   {/* ← add this */}
-      {/* Header */}
-      <div style={styles.header}>
-        <button onClick={onBack} style={styles.backBtn}>← Back</button>
-        <div style={styles.logo}>
-          <span style={{ fontSize: '18px' }}>📖</span>
-          <span style={styles.logoText}>CommonBook</span>
+      {/* Sticky App Bar */}
+      <header style={styles.topBar}>
+        <div style={{ ...styles.topBarInner, padding: isMobile ? '16px 12px' : '22px 24px' }}>
+          <div style={styles.logoRow}>
+            <span className="material-symbols-outlined" style={styles.logoIcon}>menu_book</span>
+            <span style={styles.logoText}>CommonBook</span>
+          </div>
+          <button onClick={onBack} style={styles.backBtn}>← Back</button>
         </div>
-        <div style={{ width: '60px' }} />
-      </div>
+      </header>
 
+      <div style={styles.inner}>
       {/* Title */}
       <div style={styles.titleBlock}>
         <p style={styles.label}>NEW ENTRY</p>
@@ -119,7 +133,7 @@ export default function AddBook({
         </button>
       </div>
 
-      <p style={styles.hint}>"Align the barcode or cover art within the frame for automatic cataloging."</p>
+      <p style={styles.hint}>"Align the ISBN barcode within the frame for automatic cataloging."</p>
 
       {scanError && <p style={styles.error}>{scanError}</p>}
 
@@ -169,7 +183,7 @@ export default function AddBook({
       <button
         style={{
           ...styles.catalogBtn,
-          backgroundColor: submitting ? '#555' : '#1a1a1a',
+          backgroundColor: submitting ? COLORS.textFaint : COLORS.accent,
           cursor: submitting ? 'not-allowed' : 'pointer'
         }}
         onClick={onSearch}
@@ -183,47 +197,59 @@ export default function AddBook({
 
 const styles = {
   container: {
-    // minHeight: '100vh',
     backgroundColor: COLORS.bg,
-    // padding: '24px 20px 48px',
     padding: '0',
     fontFamily: FONTS.body,
     width: '100%',
     maxWidth: '1600px',
-    // margin: '0 auto',
+    margin: '0 auto',
     boxSizing: 'border-box',
   },
   inner: {
     maxWidth: '640px',
     margin: '0 auto',
-    padding: '24px 20px 80px',
+    padding: '24px 20px 144px',
     width: '100%',
     boxSizing: 'border-box',
   },
-  header: {
+  topBar: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 40,
+    backgroundColor: COLORS.bg,
+    borderBottom: `1px solid ${COLORS.border}`,
+  },
+  topBarInner: {
+    maxWidth: '1600px',
+    margin: '0 auto',
+    width: '100%',
+    boxSizing: 'border-box',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '28px',
   },
   backBtn: {
     background: 'none',
     border: 'none',
     color: COLORS.textSoft,
     cursor: 'pointer',
-    fontSize: '14px',
+    fontSize: '13px',
     fontFamily: FONTS.body,
     letterSpacing: '0.04em',
-    width: '60px',
-    textAlign: 'left',
     padding: '4px 0',
   },
-  logo: { display: 'flex', alignItems: 'center', gap: '8px' },
+  logoRow: { display: 'flex', alignItems: 'center', gap: '7px' },
+  logoIcon: {
+    fontSize: '24px',
+    color: COLORS.accent,
+    fontVariationSettings: "'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24",
+  },
   logoText: {
     fontFamily: FONTS.display,
     fontStyle: 'italic',
-    fontSize: '18px',
-    color: COLORS.text,
+    fontSize: '24px',
+    fontWeight: 700,
+    color: COLORS.commonbookLogo,
   },
   titleBlock: { marginBottom: '24px' },
   label: {
@@ -244,7 +270,7 @@ const styles = {
   },
   scanArea: {
     position: 'relative',
-    backgroundColor: '#3a3d35',
+    backgroundColor: COLORS.text,
     borderRadius: '16px',
     overflow: 'hidden',
     minHeight: '220px',
@@ -282,13 +308,13 @@ const styles = {
   toggleRow: { display: 'flex', gap: '8px', marginBottom: '16px' },
   toggleActive: {
     padding: '7px 20px', borderRadius: '999px',
-    border: '1.5px solid #1a1a1a',
-    backgroundColor: COLORS.text, color: '#fff',
+    border: `1.5px solid ${COLORS.accent}`,
+    backgroundColor: COLORS.accent, color: '#fff',
     fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer',
   },
   toggleInactive: {
     padding: '7px 20px', borderRadius: '999px',
-    border: '1.5px solid #ccc',
+    border: `1.5px solid ${COLORS.border}`,
     backgroundColor: 'transparent', color: COLORS.textSoft,
     fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer',
   },
@@ -301,6 +327,7 @@ const styles = {
     padding: '13px 14px',
     border: `1.5px solid ${COLORS.border}`, borderRadius: '8px',
     outline: 'none', color: COLORS.text,
+    backgroundColor: COLORS.surface,
     fontFamily: FONTS.body,
     boxSizing: 'border-box', width: '100%',
   },
@@ -308,7 +335,7 @@ const styles = {
   successMsg: { color: COLORS.success, fontSize: '13px', marginBottom: '12px' },
   catalogBtn: {
     width: '100%', padding: '16px',
-    backgroundcolor: COLORS.text, color: '#fff',
+    backgroundColor: COLORS.accent, color: '#fff',
     border: 'none', borderRadius: '10px',
     fontSize: '13px', fontWeight: 700,
     letterSpacing: '0.12em', cursor: 'pointer',

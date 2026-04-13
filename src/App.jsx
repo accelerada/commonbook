@@ -207,19 +207,20 @@ function App() {
     return sorted
   }, [books, genreFilter, statusFilter, ratingFilter, sortBy])
 
-  const searchBook = async () => {
-    if (!isbn.trim() || !session?.user) {
+  const searchBook = async (overrideValue) => {
+    const searchInput = typeof overrideValue === 'string' ? overrideValue : isbn
+    if (!searchInput.trim() || !session?.user) {
       setMessage('Please log in and enter an ISBN or title.')
       return
     }
     setSubmitting(true)
     setMessage('Searching...')
-    const cleanInput = isbn.trim().replace(/[-\s]/g, '')
+    const cleanInput = searchInput.trim().replace(/[-\s]/g, '')
     let query
     if (/^\d{10,13}$/.test(cleanInput)) {
       query = `isbn:${cleanInput}`
     } else {
-      query = `intitle:${isbn.trim()}`
+      query = `intitle:${searchInput.trim()}`
     }
     try {
       const res = await fetch(
@@ -355,33 +356,6 @@ function App() {
   }
 
   if (!session) return <Login />
-
-  if (selectedBook) {
-    return (
-      <BookDetail
-        book={selectedBook}
-        session={session}
-        onBack={() => setSelectedBook(null)}
-        onBookUpdated={handleBookUpdated}
-      />
-    )
-  }
-
-  if (activeTab === 'addbook') {
-    return (
-      <AddBook
-        isbn={isbn}
-        setIsbn={setIsbn}
-        onSearch={searchBook}
-        onConfirm={confirmAddBook}
-        pendingBooks={pendingBooks}
-        setPendingBooks={setPendingBooks}
-        message={message}
-        submitting={submitting}
-        onBack={() => setActiveTab('library')}
-      />
-    )
-  }
 
   // ── Tab content ───────────────────────────────────────
   const renderTabContent = () => {
@@ -566,56 +540,81 @@ function App() {
   // ── Main Layout ───────────────────────────────────────
   return (
     <div style={styles.page}>
-      <div style={styles.appShell}>
 
-        {/* ── Top Bar ── */}
-        <div style={styles.topRow}>
-          <div style={styles.logoRow}>
-            <span style={styles.logoIcon}>📖</span>
-            <span style={styles.logoText}>Commonbook</span>
-          </div>
-          <div style={styles.accountMenuWrap} ref={accountMenuRef}>
-            <button
-              type="button"
-              style={styles.avatarButton}
-              aria-label="Account"
-              onClick={(e) => { e.stopPropagation(); setShowAccountMenu((prev) => !prev) }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21a8 8 0 0 0-16 0" />
-                <circle cx="12" cy="8" r="4" />
-              </svg>
-            </button>
-            {showAccountMenu && (
-              <div style={styles.accountDropdown}>
-                <div style={styles.accountDropdownHeader}>Account</div>
-                <div style={styles.accountDropdownEmail}>{maskedEmail}</div>
+      {selectedBook ? (
+        <BookDetail
+          book={selectedBook}
+          session={session}
+          onBack={() => setSelectedBook(null)}
+          onBookUpdated={handleBookUpdated}
+        />
+      ) : activeTab === 'addbook' ? (
+        <AddBook
+          isbn={isbn}
+          setIsbn={setIsbn}
+          onSearch={searchBook}
+          onConfirm={confirmAddBook}
+          pendingBooks={pendingBooks}
+          setPendingBooks={setPendingBooks}
+          message={message}
+          submitting={submitting}
+          onBack={() => setActiveTab('library')}
+        />
+      ) : (
+        <>
+          {/* ── Sticky App Bar ── */}
+          <header style={styles.appBar}>
+            <div style={styles.appBarInner}>
+              <div style={styles.logoRow}>
+                <span className="material-symbols-outlined" style={styles.logoIcon}>menu_book</span>
+                <span style={styles.logoText}>CommonBook</span>
+              </div>
+              <div style={styles.accountMenuWrap} ref={accountMenuRef}>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); handleLogout() }}
-                  onMouseEnter={() => setIsSignOutHovered(true)}
-                  onMouseLeave={() => setIsSignOutHovered(false)}
-                  style={{
-                    ...styles.accountDropdownItem,
-                    backgroundColor: isSignOutHovered ? COLORS.tagBg : 'transparent',
-                    color: isSignOutHovered ? COLORS.accent : COLORS.text
-                  }}
+                  style={styles.avatarButton}
+                  aria-label="Account"
+                  onClick={(e) => { e.stopPropagation(); setShowAccountMenu((prev) => !prev) }}
                 >
-                  Sign out
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21a8 8 0 0 0-16 0" />
+                    <circle cx="12" cy="8" r="4" />
+                  </svg>
                 </button>
+                {showAccountMenu && (
+                  <div style={styles.accountDropdown}>
+                    <div style={styles.accountDropdownHeader}>Account</div>
+                    <div style={styles.accountDropdownEmail}>{maskedEmail}</div>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleLogout() }}
+                      onMouseEnter={() => setIsSignOutHovered(true)}
+                      onMouseLeave={() => setIsSignOutHovered(false)}
+                      style={{
+                        ...styles.accountDropdownItem,
+                        backgroundColor: isSignOutHovered ? COLORS.tagBg : 'transparent',
+                        color: isSignOutHovered ? COLORS.accent : COLORS.text
+                      }}
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          </header>
+
+          {/* ── Page Content ── */}
+          <div style={styles.appShell}>
+            {/* ── Page Heading ── */}
+            <h1 style={styles.pageTitle}>Personal Collection</h1>
+
+            {/* ── Tab Content ── */}
+            {renderTabContent()}
           </div>
-        </div>
-
-        {/* ── Page Heading ── */}
-        <h1 style={styles.pageTitle}>Personal Collection</h1>
-
-        {/* ── Tab Content ── */}
-        {renderTabContent()}
-
-      </div>
+        </>
+      )}
 
       {/* ── Fixed Bottom Tab Bar ── */}
       <nav style={styles.tabBar}>
@@ -636,7 +635,7 @@ function App() {
                 color: isActive ? COLORS.accent : COLORS.text,
                 opacity: isActive ? 1 : 0.45,
               }}
-              onClick={() => setActiveTab(key)}
+              onClick={() => { setSelectedBook(null); setActiveTab(key) }}
             >
               <Icon active={isActive} />
               <span style={{
@@ -715,6 +714,23 @@ const makeStyles = (isMobile, width) => ({
     borderRadius: '20px',
     color: COLORS.text
   },
+  appBar: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 40,
+    backgroundColor: COLORS.bg,
+    borderBottom: `1px solid ${COLORS.border}`,
+  },
+  appBarInner: {
+    maxWidth: '1600px',
+    margin: '0 auto',
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: isMobile ? '16px 12px' : '22px 24px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   appShell: {
     maxWidth: '1600px',
     margin: '0 auto',
@@ -722,18 +738,16 @@ const makeStyles = (isMobile, width) => ({
     boxSizing: 'border-box',
     width: '100%',
   },
-  topRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '16px',
-  },
   logoRow: {
     display: 'flex',
     alignItems: 'center',
     gap: '7px',
   },
-  logoIcon: { fontSize: '18px' },
+  logoIcon: {
+    fontSize: '24px',
+    color: COLORS.accent,
+    fontVariationSettings: "'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24",
+  },
   logoText: {
     fontFamily: "'Newsreader', Georgia, serif",
     fontStyle: 'italic',
@@ -808,60 +822,49 @@ const makeStyles = (isMobile, width) => ({
   },
   filterWrap: {
     display: 'flex',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    gap: isMobile ? '6px' : '12px',    // ← reasonable gap between each pill
-    // flexWrap: isMobile ? 'nowrap' : 'wrap',
-    // overflowX: isMobile ? 'auto' : 'visible',
+    gap: isMobile ? '4px' : '8px',
     width: '100%',
-    // maxWidth: isMobile ? '100%' : 'calc(3 * 300px + 2 * 24px)',
-    // paddingBottom: isMobile ? '4px' : '0',
     marginBottom: '20px',
     position: 'relative',
     zIndex: 30,
     overflowY: 'visible',
-    overflowX: isMobile ? 'auto' : 'visible',
   },
   dropdownWrap: { position: 'relative' },
   filterButton: {
-    flex: 1,
-    minWidth: isMobile ? '80px' : '120px',
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '8px',
+    gap: isMobile ? '4px' : '6px',
     border: `1px solid ${COLORS.border}`,
     background: COLORS.cardBg,
     color: COLORS.text,
     borderRadius: '999px',
-    padding: '8px 16px',
-    fontSize: isMobile ? '0.82rem' : '0.95rem',
+    padding: isMobile ? '6px 9px' : '8px 14px',
+    fontSize: isMobile ? '0.72rem' : '0.88rem',
+    whiteSpace: 'nowrap',
     outline: 'none',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    flexShrink: 0,
   },
   filterButtonWide: {
-    flex: 1,
-    minWidth: isMobile ? '80px' : '120px',
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '8px',
+    gap: isMobile ? '4px' : '6px',
     border: `1px solid ${COLORS.border}`,
     background: COLORS.cardBg,
     color: COLORS.text,
     borderRadius: '999px',
-    padding: '8px 16px',
-    fontSize: isMobile ? '0.82rem' : '0.95rem',
+    padding: isMobile ? '6px 9px' : '8px 14px',
+    fontSize: isMobile ? '0.72rem' : '0.88rem',
+    whiteSpace: 'nowrap',
     outline: 'none',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    flexShrink: 0,
   },
   filterButtonLabel: {
-    minWidth: 0,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    flex: 1,
-    textAlign: 'left'
+    textAlign: 'left',
   },
   chevron: { color: COLORS.textSoft, fontSize: '0.95rem', flexShrink: 0 },
   dropdownMenu: {

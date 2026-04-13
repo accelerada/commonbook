@@ -1,22 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
-// import { COLORS } from './colors';
+import { COLORS } from './colors';
+import { FONTS, TYPE } from './theme'
 
-const COLORS = {
-  bg: '#fbf9f4',
-  surface: '#FCFAF6',
-  surfaceStrong: '#FFFFFF',
-  border: '#DED7CB',
-  olive: '#7D836D',
-  tagBg: '#E6E2D7',
-  coverBg: '#e1e0dc',
-  gold: '#C8B27D',
-  red: '#dd2121ff',
-  text: '#2F2F2F',
-  textSoft: '#7E7A73',
-  secondaryBtn: '#EFE8DA',
-  shadow: '0 10px 26px rgba(80, 68, 52, 0.08)'
-}
+// const COLORS = {
+//   bg: '#fbf9f4',
+//   surface: '#FCFAF6',
+//   surfaceStrong: '#FFFFFF',
+//   border: '#DED7CB',
+//   olive: '#7D836D',
+//   tagBg: '#E6E2D7',
+//   coverBg: '#e1e0dc',
+//   gold: '#C8B27D',
+//   red: '#dd2121ff',
+//   text: '#2F2F2F',
+//   textSoft: '#7E7A73',
+//   secondaryBtn: '#EFE8DA',
+//   shadow: '0 10px 26px rgba(80, 68, 52, 0.08)'
+// }
 
 
 
@@ -245,7 +246,7 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
       </div>
 
       <div style={styles.container}>
-
+          
         {/* Message */}
         {message && <div style={styles.message}>{message}</div>}
 
@@ -543,9 +544,9 @@ const styles = {
   },
   // ── Scrollable content ─────────────────────────────────
   container: {
-    maxWidth: '500px',
+    maxWidth: '600px',
     margin: '0 auto',
-    padding: '20px 20px 0'
+    padding: '20px 40px 0'
   },
   message: {
     marginBottom: '14px',
@@ -563,7 +564,7 @@ const styles = {
     alignItems: 'center',
     paddingBottom: '20px',
     padding: '24px 20px',          // ← add padding all around
-    background: COLORS.coverBg,    // ← card background
+    background: COLORS.cardBg,    // ← card background
     border: `1px solid ${COLORS.border}`,  // ← subtle border
     borderRadius: '24px',          // ← rounded corners
     boxShadow: COLORS.shadow,      // ← lift it off the page
@@ -638,7 +639,7 @@ const styles = {
     textAlign: 'justify',
     margin: '0 0 8px',
     fontStyle: 'italic',
-    fontFamily: "'Newsreader', Georgia, serif",
+    fontFamily: FONTS.display,
   },
   readMoreBtn: {
     background: 'none',
@@ -665,7 +666,7 @@ const styles = {
     display: 'inline-flex',
     padding: '4px 14px',
     borderRadius: '999px',
-    background: COLORS.olive,
+    background: COLORS.accent,
     color: '#FFFFFF',
     fontSize: '0.72rem',
     fontWeight: 700,
@@ -740,7 +741,7 @@ const styles = {
     whiteSpace: 'nowrap',
     fontSize: '32px',
     lineHeight: '32px',
-    color: COLORS.red
+    color: COLORS.heartFill
   },
   ratingValue: {
     fontSize: '0.9rem',
@@ -817,7 +818,8 @@ const styles = {
     background: COLORS.surface,
     border: `1px solid ${COLORS.border}`,
     borderRadius: '18px',
-    padding: '16px'
+    padding: '16px',
+    borderLeft: `6px solid ${COLORS.accent}`
   },
   quoteText: {
     fontSize: '0.8rem',
@@ -829,7 +831,7 @@ const styles = {
   },
   quoteMood: {
     fontSize: '0.8rem',
-    color: COLORS.olive,
+    color: COLORS.accent,
     marginBottom: '8px',
     fontWeight: 600,
     textAlign: 'center'
@@ -845,7 +847,7 @@ const styles = {
     padding: '4px 10px',
     borderRadius: '999px',
     background: COLORS.tagBg,
-    color: COLORS.olive,
+    color: COLORS.accent,
     fontSize: '0.75rem',
     fontWeight: 600
   },
@@ -912,7 +914,7 @@ const styles = {
     padding: '12px 18px',
     border: 'none',
     borderRadius: '999px',
-    background: COLORS.olive,
+    background: COLORS.accent,
     color: '#FFFFFF',
     fontSize: '0.94rem',
     fontWeight: 600,
@@ -922,7 +924,7 @@ const styles = {
     padding: '8px 16px',
     border: 'none',
     borderRadius: '999px',
-    background: COLORS.olive,
+    background: COLORS.accent,
     color: '#FFFFFF',
     fontSize: '0.82rem',
     fontWeight: 600,
