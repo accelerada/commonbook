@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
+// import { COLORS } from './colors';
 
 const COLORS = {
-  bg: '#F5F2EB',
+  bg: '#fbf9f4',
   surface: '#FCFAF6',
   surfaceStrong: '#FFFFFF',
   border: '#DED7CB',
   olive: '#7D836D',
   tagBg: '#E6E2D7',
-  coverBg: '#E7E1D6',
+  coverBg: '#e1e0dc',
   gold: '#C8B27D',
   red: '#dd2121ff',
   text: '#2F2F2F',
@@ -17,11 +18,14 @@ const COLORS = {
   shadow: '0 10px 26px rgba(80, 68, 52, 0.08)'
 }
 
+
+
 function BookDetail({ book, session, onBack, onBookUpdated }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
+  const [descExpanded, setDescExpanded] = useState(false)
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(null)
   const [notes, setNotes] = useState('')
@@ -33,31 +37,27 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
   const [newQuotePage, setNewQuotePage] = useState('')
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  
 
   useEffect(() => {
     if (!book) return
-
     setRating(typeof book.rating === 'number' ? book.rating : 0)
     setNotes(book.notes || '')
     setCurrentPageInput(
       typeof book.current_page === 'number' ? String(book.current_page) : '0'
     )
-
     fetchQuotes()
   }, [book?.id])
 
   const fetchQuotes = async () => {
     if (!book?.id || !session?.user) return
-
     setLoading(true)
-
     const { data, error } = await supabase
       .from('quotes')
       .select('*')
       .eq('book_id', book.id)
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
-
     if (error) {
       console.error('Fetch quotes error:', error)
       setMessage(`Error loading quotes: ${error.message}`)
@@ -65,7 +65,6 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
     } else {
       setQuotes(data || [])
     }
-
     setLoading(false)
   }
 
@@ -125,52 +124,40 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
 
   const handleAddQuote = async () => {
     if (!book?.id || !session?.user || !newQuoteText.trim()) return
-
     const parsedPage = newQuotePage.trim() ? parseInt(newQuotePage, 10) : null
-
     if (newQuotePage.trim() && Number.isNaN(parsedPage)) {
       setMessage('Page number must be a valid number')
       return
     }
-
     const payload = {
       book_id: book.id,
       user_id: session.user.id,
       text: newQuoteText.trim(),
       page_number: parsedPage
     }
-
     const { data, error } = await supabase
       .from('quotes')
       .insert(payload)
       .select()
       .single()
-
     if (error) {
       console.error('Add quote error:', error)
       setMessage(`Error adding quote: ${error.message}`)
       return
     }
-
     setQuotes((prev) => [data, ...prev])
     setNewQuoteText('')
     setNewQuotePage('')
     setShowAddQuote(false)
     setMessage('Quote saved')
-
-    // Run AI categorization in background
     const { data: aiResult, error: aiError } = await supabase.functions.invoke('categorize-quote', {
-        body: { quoteId: data.id }
+      body: { quoteId: data.id }
     })
-
     if (aiError) {
-        console.error('AI categorization error:', aiError)
-        return
+      console.error('AI categorization error:', aiError)
+      return
     }
-
     console.log('AI categorization result:', aiResult)
-
-    // Refresh quotes so tags / mood / ai_status appear
     fetchQuotes()
   }
 
@@ -180,50 +167,39 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
       .delete()
       .eq('id', quoteId)
       .eq('user_id', session.user.id)
-
     if (error) {
       console.error('Delete quote error:', error)
       setMessage(`Error deleting quote: ${error.message}`)
       return
     }
-
     setQuotes((prev) => prev.filter((quote) => quote.id !== quoteId))
   }
 
   const handleDeleteBook = async () => {
     const { error } = await supabase
-        .from('books')
-        .delete()
-        .eq('id', book.id)
-        .eq('user_id', session.user.id)
-
+      .from('books')
+      .delete()
+      .eq('id', book.id)
+      .eq('user_id', session.user.id)
     if (error) {
-        setMessage(`Error deleting book: ${error.message}`)
-        setShowDeleteConfirm(false)
-        return
+      setMessage(`Error deleting book: ${error.message}`)
+      setShowDeleteConfirm(false)
+      return
     }
-
     if (onBookUpdated) onBookUpdated(null, book.id)
-
-    setTimeout(() => {
-        onBack()
-    }, 100)
+    setTimeout(() => { onBack() }, 100)
   }
-
 
   const saveBookDetails = async () => {
     if (!book?.id || !session?.user) return
-
     setSaving(true)
     setMessage('')
-
     const payload = {
       notes,
       rating,
       current_page: currentPage,
       updated_at: new Date().toISOString()
     }
-
     const { data, error } = await supabase
       .from('books')
       .update(payload)
@@ -231,29 +207,22 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
       .eq('user_id', session.user.id)
       .select()
       .single()
-
     if (error) {
       console.error('Save book error:', error)
       setMessage(`Error saving book: ${error.message}`)
       setSaving(false)
       return
     }
-
     setSaving(false)
     setMessage('Changes saved')
-
-    if (onBookUpdated) {
-      onBookUpdated(data)
-    }
+    if (onBookUpdated) onBookUpdated(data)
   }
 
   if (!book) {
     return (
       <div style={styles.page}>
         <div style={styles.container}>
-          <button onClick={onBack} style={styles.secondaryPill}>
-            ← Back
-          </button>
+          <button onClick={onBack} style={styles.secondaryPill}>← Back</button>
           <div style={{ marginTop: '24px', color: COLORS.text }}>No book selected.</div>
         </div>
       </div>
@@ -262,56 +231,74 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
 
   return (
     <div style={styles.page}>
-      <div style={styles.container}>
 
-        {/* Header */}
-        <div style={styles.header}>
-          <button onClick={onBack} style={styles.secondaryPill}>
-            ← Back
-          </button>
-          <h1 style={styles.headerTitle}>Book Details</h1>
-          <div style={{ width: 88 }} />
+      {/* Sticky Header */}
+      <div style={styles.header}>
+        <button onClick={onBack} style={styles.backButton}>← CommonBook</button>
+        <div style={styles.avatarCircle}>
+          {session?.user?.user_metadata?.avatar_url ? (
+            <img src={session.user.user_metadata.avatar_url} alt="avatar" style={styles.avatarImg} />
+          ) : (
+            <span style={{ fontSize: '0.85rem', color: COLORS.textSoft }}>👤</span>
+          )}
         </div>
+      </div>
+
+      <div style={styles.container}>
 
         {/* Message */}
         {message && <div style={styles.message}>{message}</div>}
 
-        {/* Book Card */}
+        {/* Book Info */}
         <div style={styles.bookCard}>
           <h2 style={styles.bookTitle}>{book.title}</h2>
           <div style={styles.author}>{book.author || 'Unknown author'}</div>
           <div style={styles.year}>{book.year_published || ''}</div>
 
-          <div style={styles.coverAndSynopsis}>
-            <div style={styles.coverFrame}>
-              {book.cover_image_url ? (
-                <img
-                  src={normalizeCoverUrl(book.cover_image_url)}
-                  alt={book.title}
-                  style={styles.coverImage}
-                />
-              ) : (
-                <div style={styles.coverFallback}>📖</div>
-              )}
-            </div>
-            <p style={styles.synopsis}>{synopsis}</p>
+          {/* Cover — centered */}
+          <div style={styles.coverFrame}>
+            {book.cover_image_url ? (
+              <img
+                src={normalizeCoverUrl(book.cover_image_url)}
+                alt={book.title}
+                style={styles.coverImage}
+              />
+            ) : (
+              <div style={styles.coverFallback}>📖</div>
+            )}
           </div>
 
+          {/* ── Synopsis ── */}
+          <div style={styles.descWrap}>
+            <p style={{
+              ...styles.description,
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: descExpanded ? 'unset' : 4,
+              overflow: descExpanded ? 'visible' : 'hidden',
+            }}>
+              {synopsis}
+            </p>
+
+            {book?.description && (
+              <button
+                type="button"
+                onClick={() => setDescExpanded(prev => !prev)}
+                style={styles.readMoreBtn}
+              >
+                {descExpanded ? 'Show Less' : 'Read More'}
+              </button>
+            )}
+          </div>
+
+          {/* Meta */}
           <div style={styles.bookMeta}>
-            <div style={styles.metaRow}>
-              {book.total_pages ? `${book.total_pages} pages` : ''}
-            </div>
-            <div style={styles.genreTag}>{getGenreLabel(book.genre)}</div>
+            {book.total_pages ? (
+              <div style={styles.metaRow}>{book.total_pages} pages</div>
+            ) : null}
+            <div style={styles.genreTag}>{getGenreLabel(book.genre).toUpperCase()}</div>
             <div style={styles.progressText}>
-              {progressPercent}% · {currentPage} of {book.total_pages || '—'} pages
-            </div>
-            <div style={styles.progressTrack}>
-              <div
-                style={{
-                  ...styles.progressFill,
-                  width: `${progressPercent}%`
-                }}
-              />
+              {progressPercent}% · {currentPage} OF {book.total_pages || '—'} PAGES
             </div>
           </div>
         </div>
@@ -319,22 +306,18 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
         {/* My Thoughts */}
         <section style={styles.section}>
           <h3 style={styles.sectionTitle}>My Thoughts</h3>
-
           <div style={styles.label}>How much do I love this book</div>
 
           <div style={styles.ratingRow}>
-            <div
-              style={styles.heartsWrap}
-              onMouseLeave={() => setHoverRating(null)}
-            >
+            <div style={styles.heartsWrap} onMouseLeave={() => setHoverRating(null)}>
               {[1, 2, 3, 4, 5].map((heartCount) => {
                 const fill = getheartFill(heartCount, displayRating)
                 return (
                   <div
                     key={heartCount}
                     style={styles.heartHitArea}
-                    onMouseMove={(event) => handleHeartMove(heartCount, event)}
-                    onClick={(event) => handleHeartClick(heartCount, event)}
+                    onMouseMove={(e) => handleHeartMove(heartCount, e)}
+                    onClick={(e) => handleHeartClick(heartCount, e)}
                     role="button"
                     aria-label={`Love ${heartCount}`}
                   >
@@ -347,8 +330,7 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
             <div style={styles.ratingValue}>{displayRating.toFixed(1)} / 5</div>
           </div>
 
-          <div style={{ ...styles.label, marginTop: '18px' }}>Current Reading Progress (Page Number)</div>
-
+          <div style={styles.fieldLabel}>CURRENT READING PROGRESS (PAGE NUMBER)</div>
           <input
             type="number"
             min="0"
@@ -359,8 +341,7 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
             placeholder="Enter current page"
           />
 
-          <div style={{ ...styles.label, marginTop: '18px' }}>Notes & Thoughts</div>
-
+          <div style={styles.fieldLabel}>NOTES & THOUGHTS</div>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -410,11 +391,7 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
                 >
                   Cancel
                 </button>
-                <button
-                  type="button"
-                  style={styles.primaryPillSmall}
-                  onClick={handleAddQuote}
-                >
+                <button type="button" style={styles.primaryPillSmall} onClick={handleAddQuote}>
                   Save Quote
                 </button>
               </div>
@@ -427,57 +404,45 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
             <div style={styles.quoteList}>
               {quotes.map((quote) => (
                 <div key={quote.id} style={styles.quoteCard}>
-                  <div style={styles.quoteBar} />
-                  <div style={styles.quoteContent}>
-                    <div style={styles.quoteText}>"{quote.text}"</div>
+                  <div style={styles.quoteText}>"{quote.text}"</div>
 
-                        {quote.mood && (
-                            <div style={styles.quoteMood}>
-                            Mood: {quote.mood}
-                            </div>
-                        )}
+                  {quote.mood && (
+                    <div style={styles.quoteMood}>Mood: {quote.mood}</div>
+                  )}
 
-                        {quote.tags && quote.tags.length > 0 && (
-                            <div style={styles.tagsWrap}>
-                            {quote.tags.map((tag, index) => (
-                                <span key={index} style={styles.tagChip}>
-                                #{tag}
-                                </span>
-                            ))}
-                            </div>
-                        )}
-
-                        {quote.ai_status === 'quota_exceeded' && (
-                            <div style={styles.quotaNotice}>
-                            AI categorisation limit reached. You can still tag this quote manually or upgrade.
-                            </div>
-                        )}
-
-                        {quote.ai_status === 'processing' && (
-                            <div style={styles.processingNotice}>
-                            Categorising quote...
-                            </div>
-                        )}
-
-                        {quote.ai_status === 'failed' && (
-                            <div style={styles.processingNotice}>
-                            AI categorisation failed. You can still tag it manually.
-                            </div>
-                        )}
-
-
-                    <div style={styles.quoteFooter}>
-                      <span style={styles.quotePage}>
-                        {quote.page_number != null ? `Page ${quote.page_number}` : 'Page not set'}
-                      </span>
-                      <button
-                        type="button"
-                        style={styles.deleteTextButton}
-                        onClick={() => handleDeleteQuote(quote.id)}
-                      >
-                        Delete
-                      </button>
+                  {quote.tags && quote.tags.length > 0 && (
+                    <div style={styles.tagsWrap}>
+                      {quote.tags.map((tag, index) => (
+                        <span key={index} style={styles.tagChip}>#{tag}</span>
+                      ))}
                     </div>
+                  )}
+
+                  {quote.ai_status === 'quota_exceeded' && (
+                    <div style={styles.quotaNotice}>
+                      AI categorisation limit reached. You can still tag this quote manually.
+                    </div>
+                  )}
+                  {quote.ai_status === 'processing' && (
+                    <div style={styles.processingNotice}>Categorising quote...</div>
+                  )}
+                  {quote.ai_status === 'failed' && (
+                    <div style={styles.processingNotice}>
+                      AI categorisation failed. You can still tag it manually.
+                    </div>
+                  )}
+
+                  <div style={styles.quoteFooter}>
+                    <span style={styles.quotePage}>
+                      {quote.page_number != null ? `PAGE ${quote.page_number}` : 'PAGE NOT SET'}
+                    </span>
+                    <button
+                      type="button"
+                      style={styles.deleteTextButton}
+                      onClick={() => handleDeleteQuote(quote.id)}
+                    >
+                      DELETE
+                    </button>
                   </div>
                 </div>
               ))}
@@ -487,50 +452,46 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
           )}
         </section>
 
-        {/* Save / Delete */}
-        <div style={styles.saveWrap}>
-          {!showDeleteConfirm ? (
-            <>
-              <button
-                type="button"
-                style={styles.deleteOutlineButton}
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                Remove Book
-              </button>
-              <button
-                type="button"
-                style={styles.primaryPill}
-                onClick={saveBookDetails}
-                disabled={saving}
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </>
-          ) : (
-            <div style={styles.confirmBox}>
-              <p style={styles.confirmText}>Remove this book from your library?</p>
-              <div style={styles.confirmActions}>
-                <button
-                  type="button"
-                  style={styles.secondaryPillSmall}
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  style={styles.deletePill}
-                  onClick={handleDeleteBook}
-                >
-                  Yes, remove it
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
+        {/* Spacer for sticky bottom bar */}
+        <div style={{ height: '80px' }} />
       </div>
+
+      {/* Sticky Bottom Bar */}
+      <div style={styles.bottomBar}>
+        {!showDeleteConfirm ? (
+          <>
+            <button
+              type="button"
+              style={styles.deleteOutlineButton}
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              Remove Book
+            </button>
+            <button
+              type="button"
+              style={styles.primaryPill}
+              onClick={saveBookDetails}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              style={styles.secondaryPillSmall}
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Cancel
+            </button>
+            <button type="button" style={styles.deletePill} onClick={handleDeleteBook}>
+              Yes, remove it
+            </button>
+          </>
+        )}
+      </div>
+
     </div>
   )
 }
@@ -540,26 +501,51 @@ const styles = {
     minHeight: '100vh',
     background: COLORS.bg,
     color: COLORS.text,
-    fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif'
+    fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
   },
-  container: {
-    maxWidth: '860px',
-    margin: '0 auto',
-    padding: '18px 24px 40px'
-  },
+  // ── Sticky header ──────────────────────────────────────
   header: {
-    display: 'grid',
-    gridTemplateColumns: '88px 1fr 88px',
+    position: 'sticky',
+    top: 0,
+    zIndex: 10,
+    display: 'flex',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '16px'
+    padding: '12px 20px',
+    background: COLORS.bg,
+    borderBottom: `1px solid ${COLORS.border}`
   },
-  headerTitle: {
-    margin: 0,
-    textAlign: 'center',
-    fontSize: '1.1rem',
+  backButton: {
+    border: 'none',
+    background: 'transparent',
+    color: COLORS.text,
+    fontSize: '0.95rem',
     fontWeight: 600,
-    letterSpacing: '-0.02em',
-    color: COLORS.text
+    cursor: 'pointer',
+    padding: 0,
+    letterSpacing: '-0.01em'
+  },
+  avatarCircle: {
+    width: '34px',
+    height: '34px',
+    borderRadius: '999px',
+    background: COLORS.tagBg,
+    border: `1px solid ${COLORS.border}`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden'
+  },
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover'
+  },
+  // ── Scrollable content ─────────────────────────────────
+  container: {
+    maxWidth: '500px',
+    margin: '0 auto',
+    padding: '20px 20px 0'
   },
   message: {
     marginBottom: '14px',
@@ -568,133 +554,165 @@ const styles = {
     border: `1px solid ${COLORS.border}`,
     background: '#F6F2EA',
     color: COLORS.text,
-    fontSize: '0.95rem'
+    fontSize: '0.9rem'
   },
+  // ── Book card ──────────────────────────────────────────
   bookCard: {
-    background: '#e1e0dc',
-    border: `1px solid ${COLORS.border}`,
-    borderRadius: '22px',
-    boxShadow: COLORS.shadow,
-    padding: '16px',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center'
+    alignItems: 'center',
+    paddingBottom: '20px',
+    padding: '24px 20px',          // ← add padding all around
+    background: COLORS.coverBg,    // ← card background
+    border: `1px solid ${COLORS.border}`,  // ← subtle border
+    borderRadius: '24px',          // ← rounded corners
+    boxShadow: COLORS.shadow,      // ← lift it off the page
+    marginBottom: '8px',           // ← breathing room before My Thoughts
   },
   bookTitle: {
-    margin: '0',
-    fontSize: '1.1rem',
+    margin: '0 0 4px',
+    fontSize: '1.5rem',
+    fontWeight: 700,
     lineHeight: 1.2,
     color: COLORS.text,
-    textAlign: 'center'
+    textAlign: 'center',
+    letterSpacing: '-0.02em'
   },
   author: {
-    margin: '0',
-    fontSize: '0.92rem',
-    lineHeight: 1.2,
-    color: COLORS.textSoft,
+    margin: '0 0 2px',
+    fontSize: '0.95rem',
+    color: COLORS.gold,
+    fontWeight: 600,
     textAlign: 'center'
   },
   year: {
     fontSize: '0.84rem',
     color: COLORS.textSoft,
-    margin: '0 0 8px',
-    lineHeight: 1.2,
+    margin: '0 0 16px',
     textAlign: 'center'
   },
-  coverAndSynopsis: {
-    display: 'grid',
-    gridTemplateColumns: '160px 1fr',
-    gap: '40px',
-    margin: '16px 0',
-    alignItems: 'start',
-    width: '100%'
-  },
   coverFrame: {
+    width: '140px',
+    height: '200px',
     background: COLORS.coverBg,
-    borderRadius: '14px',
-    minHeight: '200px',
+    borderRadius: '12px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    marginBottom: '16px',
+    flexShrink: 0
   },
   coverImage: {
-    width: '100%',
-    height: '100%',
+    // width: '100%',
+    // height: '100%',
+    // objectFit: 'cover'
+
+    maxWidth: '100%',
+    maxHeight: '100%',
+    width: 'auto',
+    height: 'auto',
     objectFit: 'contain',
-    objectPosition: 'center'
+    display: 'block',
+    boxShadow: '0px 7px 6px rgba(0, 0, 0, 0.3), -3px 3px 8px rgba(0, 0, 0, 0.12)'
   },
   coverFallback: {
     fontSize: '2.2rem',
     color: COLORS.textSoft
   },
   synopsis: {
-    margin: '0',
+    margin: '0 0 16px',
     fontSize: '0.86rem',
-    lineHeight: 1.5,
+    lineHeight: 1.6,
     color: COLORS.textSoft,
+    fontStyle: 'italic',
     textAlign: 'left'
+  },
+  descWrap: {
+    marginBottom: '20px',
+  },
+  description: {
+    fontSize: '0.95rem',
+    color: COLORS.text,
+    lineHeight: 1.75,
+    textAlign: 'justify',
+    margin: '0 0 8px',
+    fontStyle: 'italic',
+    fontFamily: "'Newsreader', Georgia, serif",
+  },
+  readMoreBtn: {
+    background: 'none',
+    border: 'none',
+    color: COLORS.text,
+    fontSize: '0.9rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: 0,
+    letterSpacing: '0.01em',
   },
   bookMeta: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    width: '100%'
+    width: '100%',
+    gap: '8px'
   },
   metaRow: {
-    marginBottom: '8px',
     fontSize: '0.84rem',
     color: COLORS.textSoft
   },
   genreTag: {
     display: 'inline-flex',
-    alignSelf: 'center',
-    padding: '4px 12px',
+    padding: '4px 14px',
     borderRadius: '999px',
     background: COLORS.olive,
     color: '#FFFFFF',
-    fontSize: '0.8rem',
-    fontWeight: 600,
-    marginBottom: '12px'
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    letterSpacing: '0.06em'
   },
   progressText: {
-    marginBottom: '8px',
-    fontSize: '0.75rem',
+    fontSize: '0.72rem',
     color: COLORS.textSoft,
-    textAlign: 'center'
+    letterSpacing: '0.04em',
+    fontWeight: 500
   },
-  progressTrack: {
-    width: '100%',
-    height: '7px',
-    background: '#D2CCC1',
-    borderRadius: '999px',
-    overflow: 'hidden'
-  },
-  progressFill: {
-    height: '100%',
-    background: COLORS.gold,
-    borderRadius: '999px'
-  },
+  // ── Sections ───────────────────────────────────────────
   section: {
-    marginTop: '24px'
+    marginTop: '28px',
+    paddingTop: '24px',
+    borderTop: `1px solid ${COLORS.border}`
   },
   sectionTitle: {
-    margin: '0 0 12px',
-    fontSize: '1.05rem',
-    color: COLORS.text
+    margin: '0 0 4px',
+    fontSize: '1.1rem',
+    fontWeight: 700,
+    color: COLORS.text,
+    letterSpacing: '-0.01em'
   },
   label: {
-    marginBottom: '8px',
+    marginBottom: '12px',
     fontSize: '0.82rem',
     color: COLORS.textSoft,
     textAlign: 'center'
   },
+  fieldLabel: {
+    marginTop: '18px',
+    marginBottom: '8px',
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    letterSpacing: '0.07em',
+    color: COLORS.textSoft,
+    textTransform: 'uppercase'
+  },
+  // ── Rating ─────────────────────────────────────────────
   ratingRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '14px',
-    flexWrap: 'wrap'
+    flexWrap: 'wrap',
+    marginBottom: '4px'
   },
   heartsWrap: {
     display: 'flex',
@@ -703,16 +721,16 @@ const styles = {
   },
   heartHitArea: {
     position: 'relative',
-    width: '30px',
-    height: '30px',
+    width: '32px',
+    height: '32px',
     cursor: 'pointer',
     userSelect: 'none'
   },
   heartBase: {
     position: 'absolute',
     inset: 0,
-    fontSize: '30px',
-    lineHeight: '30px',
+    fontSize: '32px',
+    lineHeight: '32px',
     color: '#D2CEC5'
   },
   heartFill: {
@@ -720,31 +738,18 @@ const styles = {
     inset: 0,
     overflow: 'hidden',
     whiteSpace: 'nowrap',
-    fontSize: '30px',
-    lineHeight: '30px',
+    fontSize: '32px',
+    lineHeight: '32px',
     color: COLORS.red
   },
   ratingValue: {
     fontSize: '0.9rem',
-    color: COLORS.textSoft
+    color: COLORS.textSoft,
+    fontWeight: 500
   },
-  textarea: {
-    width: '100%',
-    minHeight: '118px',
-    resize: 'vertical',
-    borderRadius: '16px',
-    border: `1px solid ${COLORS.border}`,
-    background: COLORS.surfaceStrong,
-    color: COLORS.text,
-    padding: '16px',
-    fontSize: '0.95rem',
-    fontFamily: 'inherit',
-    outline: 'none',
-    boxSizing: 'border-box'
-  },
+  // ── Inputs ─────────────────────────────────────────────
   pageInput: {
     width: '100%',
-    marginTop: '10px',
     borderRadius: '14px',
     border: `1px solid ${COLORS.border}`,
     background: COLORS.surfaceStrong,
@@ -755,12 +760,27 @@ const styles = {
     boxSizing: 'border-box',
     outline: 'none'
   },
+  textarea: {
+    width: '100%',
+    minHeight: '118px',
+    resize: 'vertical',
+    borderRadius: '16px',
+    border: `1px solid ${COLORS.border}`,
+    background: COLORS.surfaceStrong,
+    color: COLORS.text,
+    padding: '14px',
+    fontSize: '0.92rem',
+    fontFamily: 'inherit',
+    outline: 'none',
+    boxSizing: 'border-box'
+  },
+  // ── Quotes ─────────────────────────────────────────────
   quoteHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: '12px',
-    marginBottom: '10px'
+    marginBottom: '14px'
   },
   addQuoteBox: {
     background: COLORS.surface,
@@ -797,39 +817,32 @@ const styles = {
     background: COLORS.surface,
     border: `1px solid ${COLORS.border}`,
     borderRadius: '18px',
-    padding: '14px',
-    display: 'flex',
-    gap: '12px'
-  },
-  quoteBar: {
-    width: '3px',
-    borderRadius: '999px',
-    background: COLORS.gold,
-    flexShrink: 0
-  },
-  quoteContent: {
-    flex: 1
+    padding: '16px'
   },
   quoteText: {
-    fontSize: '0.92rem',
-    lineHeight: 1.6,
+    fontSize: '0.8rem',
+    lineHeight: 1.65,
     color: COLORS.text,
+    fontStyle: 'italic',
+    textAlign: 'center',
     marginBottom: '12px'
   },
   quoteMood: {
     fontSize: '0.8rem',
     color: COLORS.olive,
     marginBottom: '8px',
-    fontWeight: 600
+    fontWeight: 600,
+    textAlign: 'center'
   },
   tagsWrap: {
     display: 'flex',
     flexWrap: 'wrap',
     gap: '8px',
-    marginBottom: '12px'
+    marginBottom: '12px',
+    justifyContent: 'center'
   },
   tagChip: {
-    padding: '5px 10px',
+    padding: '4px 10px',
     borderRadius: '999px',
     background: COLORS.tagBg,
     color: COLORS.olive,
@@ -837,32 +850,40 @@ const styles = {
     fontWeight: 600
   },
   quotaNotice: {
-    fontSize: '0.8rem',
+    fontSize: '0.78rem',
     color: '#A0522D',
     marginBottom: '10px',
-    lineHeight: 1.4
+    lineHeight: 1.4,
+    textAlign: 'center'
   },
   processingNotice: {
-    fontSize: '0.8rem',
+    fontSize: '0.78rem',
     color: COLORS.textSoft,
     marginBottom: '10px',
-    lineHeight: 1.4
+    lineHeight: 1.4,
+    textAlign: 'center'
   },
   quoteFooter: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '12px'
+    marginTop: '4px',
+    paddingTop: '10px',
+    borderTop: `1px solid ${COLORS.border}`
   },
   quotePage: {
-    fontSize: '0.78rem',
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    letterSpacing: '0.05em',
     color: COLORS.textSoft
   },
   deleteTextButton: {
     border: 'none',
     background: 'transparent',
     color: COLORS.textSoft,
-    fontSize: '0.8rem',
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    letterSpacing: '0.05em',
     cursor: 'pointer',
     padding: 0
   },
@@ -870,17 +891,25 @@ const styles = {
     fontSize: '0.9rem',
     color: COLORS.textSoft
   },
-  saveWrap: {
+  // ── Sticky bottom bar ──────────────────────────────────
+  bottomBar: {
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     gap: '12px',
-    marginTop: '26px',
-    flexWrap: 'wrap'
+    padding: '12px 20px',
+    background: COLORS.bg,
+    borderTop: `1px solid ${COLORS.border}`,
+    zIndex: 10
   },
   primaryPill: {
-    padding: '8px 18px',
-    minWidth: '152px',
+    flex: 1,
+    maxWidth: '200px',
+    padding: '12px 18px',
     border: 'none',
     borderRadius: '999px',
     background: COLORS.olive,
@@ -891,18 +920,16 @@ const styles = {
   },
   primaryPillSmall: {
     padding: '8px 16px',
-    minWidth: '104px',
     border: 'none',
     borderRadius: '999px',
     background: COLORS.olive,
     color: '#FFFFFF',
-    fontSize: '0.84rem',
+    fontSize: '0.82rem',
     fontWeight: 600,
     cursor: 'pointer'
   },
   secondaryPill: {
     padding: '8px 16px',
-    minWidth: '100px',
     borderRadius: '999px',
     border: `1px solid ${COLORS.border}`,
     background: '#e1e0dc',
@@ -912,7 +939,9 @@ const styles = {
     cursor: 'pointer'
   },
   secondaryPillSmall: {
-    padding: '8px 16px',
+    flex: 1,
+    maxWidth: '160px',
+    padding: '12px 16px',
     borderRadius: '999px',
     border: `1px solid ${COLORS.border}`,
     background: COLORS.secondaryBtn,
@@ -922,8 +951,9 @@ const styles = {
     cursor: 'pointer'
   },
   deleteOutlineButton: {
-    padding: '8px 18px',
-    minWidth: '120px',
+    flex: 1,
+    maxWidth: '160px',
+    padding: '12px 18px',
     border: `1px solid ${COLORS.border}`,
     borderRadius: '999px',
     background: 'transparent',
@@ -932,8 +962,9 @@ const styles = {
     cursor: 'pointer'
   },
   deletePill: {
-    padding: '8px 18px',
-    minWidth: '120px',
+    flex: 1,
+    maxWidth: '200px',
+    padding: '12px 18px',
     border: 'none',
     borderRadius: '999px',
     background: '#A0522D',
@@ -941,25 +972,6 @@ const styles = {
     fontSize: '0.84rem',
     fontWeight: 600,
     cursor: 'pointer'
-  },
-  confirmBox: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '16px 20px',
-    borderRadius: '18px',
-    border: `1px solid ${COLORS.border}`,
-    background: COLORS.surface
-  },
-  confirmText: {
-    margin: 0,
-    fontSize: '0.9rem',
-    color: COLORS.text
-  },
-  confirmActions: {
-    display: 'flex',
-    gap: '10px'
   }
 }
 

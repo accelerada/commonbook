@@ -1,27 +1,32 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
+import { COLORS } from './colors';
+import { FONTS, TYPE } from './theme'
 
-const COLORS = {
-  bg: '#F5F2EB',
-  surface: '#FCFAF6',
-  surfaceStrong: '#FFFFFF',
-  border: '#DED7CB',
-  olive: '#7D836D',
-  tagBg: '#E6E2D7',
-  coverBg: '#E7E1D6',
-  gold: '#C8B27D',
-  red: '#dd2121ff',
-  text: '#2F2F2F',
-  textSoft: '#7E7A73',
-  secondaryBtn: '#EFE8DA',
-  shadow: '0 10px 26px rgba(80, 68, 52, 0.08)'
-}
+// const COLORS = {
+//   bg: '#fbf9f4',
+//   surface: '#FCFAF6',
+//   surfaceStrong: '#FFFFFF',
+//   border: '#DED7CB',
+//   olive: '#7D836D',
+//   tagBg: '#E6E2D7',
+//   coverBg: '#e1e0dc',
+//   gold: '#C8B27D',
+//   red: '#dd2121ff',
+//   text: '#2F2F2F',
+//   textSoft: '#7E7A73',
+//   secondaryBtn: '#EFE8DA',
+//   shadow: '0 10px 26px rgba(80, 68, 52, 0.08)'
+// }
+
+
 
 function BookDetail({ book, session, onBack, onBookUpdated }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
+  const [descExpanded, setDescExpanded] = useState(false)
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(null)
   const [notes, setNotes] = useState('')
@@ -33,6 +38,7 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
   const [newQuotePage, setNewQuotePage] = useState('')
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  
 
   useEffect(() => {
     if (!book) return
@@ -240,7 +246,7 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
       </div>
 
       <div style={styles.container}>
-
+          
         {/* Message */}
         {message && <div style={styles.message}>{message}</div>}
 
@@ -263,8 +269,28 @@ function BookDetail({ book, session, onBack, onBookUpdated }) {
             )}
           </div>
 
-          {/* Synopsis */}
-          <p style={styles.synopsis}>{synopsis}</p>
+          {/* ── Synopsis ── */}
+          <div style={styles.descWrap}>
+            <p style={{
+              ...styles.description,
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: descExpanded ? 'unset' : 4,
+              overflow: descExpanded ? 'visible' : 'hidden',
+            }}>
+              {synopsis}
+            </p>
+
+            {book?.description && (
+              <button
+                type="button"
+                onClick={() => setDescExpanded(prev => !prev)}
+                style={styles.readMoreBtn}
+              >
+                {descExpanded ? 'Show Less' : 'Read More'}
+              </button>
+            )}
+          </div>
 
           {/* Meta */}
           <div style={styles.bookMeta}>
@@ -476,7 +502,7 @@ const styles = {
     minHeight: '100vh',
     background: COLORS.bg,
     color: COLORS.text,
-    fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif'
+    fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
   },
   // ── Sticky header ──────────────────────────────────────
   header: {
@@ -518,9 +544,9 @@ const styles = {
   },
   // ── Scrollable content ─────────────────────────────────
   container: {
-    maxWidth: '500px',
+    maxWidth: '600px',
     margin: '0 auto',
-    padding: '20px 20px 0'
+    padding: '20px 40px 0'
   },
   message: {
     marginBottom: '14px',
@@ -536,7 +562,13 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    paddingBottom: '8px'
+    paddingBottom: '20px',
+    padding: '24px 20px',          // ← add padding all around
+    background: COLORS.cardBg,    // ← card background
+    border: `1px solid ${COLORS.border}`,  // ← subtle border
+    borderRadius: '24px',          // ← rounded corners
+    boxShadow: COLORS.shadow,      // ← lift it off the page
+    marginBottom: '8px',           // ← breathing room before My Thoughts
   },
   bookTitle: {
     margin: '0 0 4px',
@@ -573,9 +605,17 @@ const styles = {
     flexShrink: 0
   },
   coverImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover'
+    // width: '100%',
+    // height: '100%',
+    // objectFit: 'cover'
+
+    maxWidth: '100%',
+    maxHeight: '100%',
+    width: 'auto',
+    height: 'auto',
+    objectFit: 'contain',
+    display: 'block',
+    boxShadow: '0px 7px 6px rgba(0, 0, 0, 0.3), -3px 3px 8px rgba(0, 0, 0, 0.12)'
   },
   coverFallback: {
     fontSize: '2.2rem',
@@ -588,6 +628,28 @@ const styles = {
     color: COLORS.textSoft,
     fontStyle: 'italic',
     textAlign: 'left'
+  },
+  descWrap: {
+    marginBottom: '20px',
+  },
+  description: {
+    fontSize: '0.95rem',
+    color: COLORS.text,
+    lineHeight: 1.75,
+    textAlign: 'justify',
+    margin: '0 0 8px',
+    fontStyle: 'italic',
+    fontFamily: FONTS.display,
+  },
+  readMoreBtn: {
+    background: 'none',
+    border: 'none',
+    color: COLORS.text,
+    fontSize: '0.9rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: 0,
+    letterSpacing: '0.01em',
   },
   bookMeta: {
     display: 'flex',
@@ -604,7 +666,7 @@ const styles = {
     display: 'inline-flex',
     padding: '4px 14px',
     borderRadius: '999px',
-    background: COLORS.olive,
+    background: COLORS.accent,
     color: '#FFFFFF',
     fontSize: '0.72rem',
     fontWeight: 700,
@@ -679,7 +741,7 @@ const styles = {
     whiteSpace: 'nowrap',
     fontSize: '32px',
     lineHeight: '32px',
-    color: COLORS.red
+    color: COLORS.heartFill
   },
   ratingValue: {
     fontSize: '0.9rem',
@@ -756,10 +818,11 @@ const styles = {
     background: COLORS.surface,
     border: `1px solid ${COLORS.border}`,
     borderRadius: '18px',
-    padding: '16px'
+    padding: '16px',
+    borderLeft: `6px solid ${COLORS.accent}`
   },
   quoteText: {
-    fontSize: '1rem',
+    fontSize: '0.8rem',
     lineHeight: 1.65,
     color: COLORS.text,
     fontStyle: 'italic',
@@ -768,7 +831,7 @@ const styles = {
   },
   quoteMood: {
     fontSize: '0.8rem',
-    color: COLORS.olive,
+    color: COLORS.accent,
     marginBottom: '8px',
     fontWeight: 600,
     textAlign: 'center'
@@ -784,7 +847,7 @@ const styles = {
     padding: '4px 10px',
     borderRadius: '999px',
     background: COLORS.tagBg,
-    color: COLORS.olive,
+    color: COLORS.accent,
     fontSize: '0.75rem',
     fontWeight: 600
   },
@@ -851,7 +914,7 @@ const styles = {
     padding: '12px 18px',
     border: 'none',
     borderRadius: '999px',
-    background: COLORS.olive,
+    background: COLORS.accent,
     color: '#FFFFFF',
     fontSize: '0.94rem',
     fontWeight: 600,
@@ -861,7 +924,7 @@ const styles = {
     padding: '8px 16px',
     border: 'none',
     borderRadius: '999px',
-    background: COLORS.olive,
+    background: COLORS.accent,
     color: '#FFFFFF',
     fontSize: '0.82rem',
     fontWeight: 600,

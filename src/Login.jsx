@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from './supabaseClient';
+import { COLORS } from './colors';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -8,52 +9,50 @@ export default function Login() {
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
-  const [modalStep, setModalStep] = useState(1); // 1 = confirm, 2 = enter name
-  const [mode, setMode] = useState('signin') 
-  const [message, setMessage] = useState('') 
-
+  const [modalStep, setModalStep] = useState(1);
+  const [mode, setMode] = useState('signin');
+  const [message, setMessage] = useState('');
 
   const attemptLogin = async () => {
     setError('');
 
-    // ── Validation ──
     if (!email.trim() && !password.trim()) {
-        setError('Please enter your email and password.');
-        return;
+      setError('Please enter your email and password.');
+      return;
     }
     if (!email.trim()) {
-        setError('Please enter your email address.');
-        return;
+      setError('Please enter your email address.');
+      return;
     }
     if (!password.trim()) {
-        setError('Please enter your password.');
-        return;
+      setError('Please enter your password.');
+      return;
     }
 
-    // ── Basic email format check ──
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        setError('Please enter a valid email address.');
-        return;
+      setError('Please enter a valid email address.');
+      return;
     }
 
     setLoading(true);
 
-    // Step 1: Try to sign in
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (signInError) {
-        const { error: signUpCheckError } = await supabase.auth.signUp({
+      const { error: signUpCheckError } = await supabase.auth.signUp({
         email,
         password: 'check-only-dummy-password-123!',
-        });
+      });
 
-        if (signUpCheckError?.message?.toLowerCase().includes('already registered') ||
-            signUpCheckError?.message?.toLowerCase().includes('already exists')) {
+      if (
+        signUpCheckError?.message?.toLowerCase().includes('already registered') ||
+        signUpCheckError?.message?.toLowerCase().includes('already exists')
+      ) {
         setError('Incorrect password. Please try again.');
-        } else {
+      } else {
         setShowModal(true);
-        }
+      }
     }
 
     setLoading(false);
@@ -64,23 +63,37 @@ export default function Login() {
     attemptLogin();
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setError('Please enter your email address first.');
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) {
+      setError(error.message);
+    } else {
+      setMessage('Reset link sent! Check your inbox.');
+    }
+    setLoading(false);
+  };
+
   const handleConfirmSignUp = async () => {
     setLoading(true);
     setModalStep(1);
 
     const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-        data: { full_name: name }
-        }
+      email,
+      password,
+      options: { data: { full_name: name } },
     });
 
     if (signUpError) {
-        setError(signUpError.message);
-        setShowModal(false);
+      setError(signUpError.message);
+      setShowModal(false);
     } else {
-        setModalStep(3); // ✅ show success screen instead of alert()
+      setModalStep(3);
     }
     setLoading(false);
   };
@@ -92,99 +105,87 @@ export default function Login() {
   return (
     <div style={styles.container}>
 
-      {/* ── Custom Modal ── */}
+      {/* ── Modal ── */}
       {showModal && (
         <div style={styles.overlay}>
-            <div style={styles.modal}>
-            <div style={styles.modalIcon}>📖</div>
-
+          <div style={styles.modal}>
             {modalStep === 1 ? (
-                <>
+              <>
                 <h2 style={styles.modalTitle}>New to CommonBook?</h2>
                 <p style={styles.modalBody}>
-                    No account was found for <strong>{email}</strong>.<br />
-                    Would you like to create one?
+                  No account was found for <strong>{email}</strong>.<br />
+                  Would you like to create one?
                 </p>
                 <div style={styles.modalButtons}>
-                    <button
+                  <button
                     style={styles.modalCancelBtn}
                     onClick={() => { setShowModal(false); setModalStep(1); }}
-                    >
+                  >
                     Not yet
-                    </button>
-                    <button
+                  </button>
+                  <button
                     style={styles.modalConfirmBtn}
                     onClick={() => setModalStep(2)}
-                    >
+                  >
                     Yes, create one
-                    </button>
+                  </button>
                 </div>
-                </>
+              </>
             ) : modalStep === 2 ? (
-                <>
+              <>
                 <h2 style={styles.modalTitle}>What shall we call you?</h2>
                 <p style={styles.modalBody}>
-                    Enter your name to personalise your reading room.
+                  Enter your name to personalise your reading room.
                 </p>
                 <input
-                    type="text"
-                    placeholder="Your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    style={{ ...styles.input, marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}
-                    autoFocus
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  style={{ ...styles.input, marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}
+                  autoFocus
                 />
                 <div style={styles.modalButtons}>
-                    <button
-                    style={styles.modalCancelBtn}
-                    onClick={() => setModalStep(1)}
-                    >
+                  <button style={styles.modalCancelBtn} onClick={() => setModalStep(1)}>
                     Back
-                    </button>
-                    <button
+                  </button>
+                  <button
                     style={styles.modalConfirmBtn}
                     onClick={handleConfirmSignUp}
                     disabled={!name.trim()}
-                    >
+                  >
                     Open my nook
-                    </button>
+                  </button>
                 </div>
-                </>
+              </>
             ) : (
-                <>
+              <>
                 <div style={{ fontSize: '40px', marginBottom: '12px' }}>🌿</div>
                 <h2 style={styles.modalTitle}>Welcome, {name}!</h2>
                 <p style={styles.modalBody}>
-                    Your nook has been prepared.<br /><br />
-                    We've sent a confirmation link to<br />
-                    <strong>{email}</strong><br /><br />
-                    Please verify your email, then come back to sign in.
+                  Your nook has been prepared.<br /><br />
+                  We've sent a confirmation link to<br />
+                  <strong>{email}</strong><br /><br />
+                  Please verify your email, then come back to sign in.
                 </p>
                 <button
-                    style={{ ...styles.modalConfirmBtn, width: '100%', boxSizing: 'border-box' }}
-                    onClick={() => { setShowModal(false); setModalStep(1); }}
+                  style={{ ...styles.modalConfirmBtn, width: '100%', boxSizing: 'border-box' }}
+                  onClick={() => { setShowModal(false); setModalStep(1); }}
                 >
-                    Got it
+                  Got it
                 </button>
-                </>
+              </>
             )}
-
-            </div>
+          </div>
         </div>
       )}
 
-      {/* ── Logo + Title ── */}
+      {/* ── Header ── */}
       <div style={styles.header}>
-        <span style={styles.icon}>📖</span>
-        <h1 style={styles.title}>Commonbook</h1>
+        <h1 style={styles.title}>CommonBook</h1>
         <p style={styles.subtitle}>A sanctuary for your favorite reads.</p>
-
-        {/* Icon */}
         <div style={styles.iconWrap}>📚</div>
-
       </div>
-
-      {/* <p style={styles.tagline}>Your quiet corner awaits.</p> */}
 
       {/* ── Social Buttons ── */}
       <div style={styles.socialRow}>
@@ -205,82 +206,82 @@ export default function Login() {
         <div style={styles.dividerLine} />
       </div>
 
-         {/* Form */}
-        <form
-          onSubmit={mode === 'forgot' ? handleForgotPassword : handleEmailSignIn}
-          style={styles.form}
-        >
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>EMAIL</label>
+      {/* ── Form ── */}
+      <form
+        onSubmit={mode === 'forgot' ? handleForgotPassword : handleEmailSignIn}
+        style={styles.form}
+      >
+        {/* EMAIL */}
+        <div style={{ position: 'relative', marginBottom: 28 }}>
+          <label style={styles.floatingLabel}>EMAIL</label>
+          <input
+            type="email"
+            placeholder="commonbook@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={styles.input}
+          />
+        </div>
+
+        {/* PASSWORD — hidden in forgot mode */}
+        {mode !== 'forgot' && (
+          <div style={{ position: 'relative', marginBottom: 8 }}>
+            <label style={styles.floatingLabel}>PASSWORD</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="commonbook@example.com"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               style={styles.input}
-              required
             />
           </div>
+        )}
 
-          {mode === 'signin' && (
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>PASSWORD</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••"
-                style={styles.input}
-                required
-              />
-              <div style={styles.forgotRow}>
-                <button
-                  type="button"
-                  style={styles.forgotLink}
-                  onClick={() => { setMode('forgot'); setMessage('') }}
-                >
-                  FORGOTTEN ACCESS?
-                </button>
-              </div>
-            </div>
-          )}
+        {/* FORGOTTEN ACCESS */}
+        {mode !== 'forgot' && (
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setMode('forgot'); setError(''); setMessage(''); }}
+            style={styles.forgotLink}
+          >
+            FORGOTTEN ACCESS?
+          </a>
+        )}
 
-          {message && (
-            <p style={styles.message}>{message}</p>
-          )}
+        {error && <p style={styles.error}>{error}</p>}
+        {message && <p style={styles.message}>{message}</p>}
 
-          <button type="submit" style={styles.submitBtn} disabled={loading}>
-            {loading ? 'LOADING...' : mode === 'forgot' ? 'SEND RESET LINK' : 'START EXPLORING'}
+        <button type="submit" style={styles.submitBtn} disabled={loading}>
+          {loading ? 'LOADING...' : mode === 'forgot' ? 'SEND RESET LINK' : 'START EXPLORING'}
+        </button>
+
+        {mode === 'forgot' && (
+          <button
+            type="button"
+            style={styles.backLink}
+            onClick={() => { setMode('signin'); setMessage(''); setError(''); }}
+          >
+            Back to sign in
           </button>
+        )}
+      </form>
 
-          {mode === 'forgot' && (
-            <button
-              type="button"
-              style={styles.backLink}
-              onClick={() => { setMode('signin'); setMessage('') }}
-            >
-              Back to sign in
-            </button>
-          )}
-        </form>
-
-        <p style={styles.footer}>Welcome back to your personal sanctuary.</p>
-      </div>
-  )
+      <p style={styles.footer}>Welcome back to your personal sanctuary.</p>
+    </div>
+  );
 }
 
-// ── Styles ───────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────
 const styles = {
   container: {
     minHeight: '100vh',
-    backgroundColor: '#f4f0e8',
+    backgroundColor: COLORS.bg,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     padding: '60px 32px 40px',
     fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
   },
-  // Modal overlay
   overlay: {
     position: 'fixed',
     inset: 0,
@@ -291,7 +292,7 @@ const styles = {
     zIndex: 1000,
   },
   modal: {
-    backgroundColor: '#f4f0e8',
+    backgroundColor: COLORS.bg,
     borderRadius: '16px',
     padding: '36px 32px',
     width: '100%',
@@ -299,41 +300,37 @@ const styles = {
     textAlign: 'center',
     boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
     fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
-    boxSizing: 'border-box',   // ✅ add this
-  },
-  modalIcon: {
-    fontSize: '32px',
-    marginBottom: '12px',
+    boxSizing: 'border-box',
   },
   modalTitle: {
     fontFamily: "'Newsreader', Georgia, serif",
     fontStyle: 'italic',
     fontWeight: 400,
     fontSize: '24px',
-    color: '#1a1a1a',
+    color: COLORS.text,
     margin: '0 0 12px',
   },
   modalBody: {
     fontSize: '14px',
-    color: '#555',
+    color: COLORS.textSoft,
     lineHeight: 1.6,
     marginBottom: '24px',
   },
   modalButtons: {
     display: 'flex',
     gap: '12px',
-    width: '100%',             // ✅ add this
-    boxSizing: 'border-box',   // ✅ add this
+    width: '100%',
+    boxSizing: 'border-box',
   },
   modalCancelBtn: {
     flex: 1,
     padding: '11px',
     borderRadius: '8px',
-    border: '1.5px solid #ccc',
+    border: `1.5px solid ${COLORS.border}`,
     backgroundColor: 'transparent',
     fontSize: '13px',
     fontWeight: 600,
-    color: '#666',
+    color: COLORS.textSoft,
     cursor: 'pointer',
     letterSpacing: '0.04em',
   },
@@ -342,7 +339,7 @@ const styles = {
     padding: '11px',
     borderRadius: '8px',
     border: 'none',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.text,
     fontSize: '13px',
     fontWeight: 600,
     color: '#fff',
@@ -354,31 +351,31 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     gap: '8px',
-    marginBottom: '16px',
+    marginBottom: '40px',
   },
-  icon: { fontSize: '36px' },
+  iconWrap: {
+    fontSize: '36px',
+    marginTop: '8px',
+  },
   title: {
     fontFamily: "'Newsreader', Georgia, serif",
     fontStyle: 'italic',
-    fontWeight: 400,
+    fontWeight: 700,
     fontSize: '38px',
-    color: '#1a1a1a',
+    color: COLORS.text,
     margin: 0,
   },
-  tagline: {
-    fontSize: '26px',
-    fontWeight: 400,
-    color: '#1a1a1a',
-    textAlign: 'center',
-    marginBottom: '32px',
-    lineHeight: 1.3,
+  subtitle: {
+    fontSize: '14px',
+    color: COLORS.textSoft,
+    margin: 0,
   },
   socialRow: {
     display: 'flex',
     gap: '12px',
     width: '100%',
     maxWidth: '360px',
-    marginBottom: '24px',
+    marginBottom: '36px',
   },
   googleBtn: {
     flex: 1,
@@ -386,15 +383,15 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    padding: '12px',
+    padding: '13px',
     backgroundColor: '#fff',
-    border: '1.5px solid #ddd',
+    border: `1.5px solid ${COLORS.border}`,
     borderRadius: '8px',
     fontSize: '13px',
     fontWeight: 600,
     letterSpacing: '0.08em',
     cursor: 'pointer',
-    color: '#1a1a1a',
+    color: COLORS.text,
   },
   appleBtn: {
     flex: 1,
@@ -402,8 +399,8 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    padding: '12px',
-    backgroundColor: '#1a1a1a',
+    padding: '13px',
+    backgroundColor: COLORS.text,
     border: 'none',
     borderRadius: '8px',
     fontSize: '13px',
@@ -418,13 +415,13 @@ const styles = {
     gap: '10px',
     width: '100%',
     maxWidth: '360px',
-    marginBottom: '24px',
+    marginBottom: '36px',
   },
-  dividerLine: { flex: 1, height: '1px', backgroundColor: '#ccc' },
+  dividerLine: { flex: 1, height: '1px', backgroundColor: COLORS.border },
   dividerText: {
     fontSize: '10px',
     letterSpacing: '0.12em',
-    color: '#999',
+    color: COLORS.textSoft,
     whiteSpace: 'nowrap',
   },
   form: {
@@ -432,39 +429,53 @@ const styles = {
     maxWidth: '360px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
   },
-  fieldGroup: { display: 'flex', flexDirection: 'column' },
-  label: {
-    fontSize: '11px',
-    fontWeight: 600,
-    letterSpacing: '0.1em',
-    color: '#666',
-    marginBottom: '6px',
+  floatingLabel: {
+    position: 'absolute',
+    top: -10,
+    left: 12,
+    backgroundColor: COLORS.bg,
+    paddingInline: 4,
+    fontSize: 11,
+    letterSpacing: '0.08em',
+    color: COLORS.textSoft,
+    zIndex: 1,
+    fontFamily: 'inherit',
   },
   input: {
-    padding: '12px 14px',
-    border: '1.5px solid #ddd',
+    width: '100%',
+    padding: '14px 16px',
+    border: `1.5px solid ${COLORS.border}`,
     borderRadius: '8px',
-    fontSize: '15px',
-    backgroundColor: '#fff',
+    fontSize: '14px',
+    backgroundColor: 'transparent',
     outline: 'none',
-    color: '#1a1a1a',
+    color: COLORS.text,
     fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
+    boxSizing: 'border-box',
   },
   forgotLink: {
-    fontSize: '10px',
-    letterSpacing: '0.1em',
-    color: '#888',
+    display: 'block',
+    textAlign: 'right',
+    fontSize: 11,
+    letterSpacing: '0.08em',
+    color: COLORS.textSoft,
+    textDecoration: 'none',
+    marginTop: 8,
+    marginBottom: 40,
     cursor: 'pointer',
   },
-  error: { color: '#c0392b', fontSize: '13px', textAlign: 'center' },
-  submitArea: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginTop: '12px',
-    gap: '8px',
+  error: {
+    color: '#c0392b',
+    fontSize: '13px',
+    textAlign: 'center',
+    marginBottom: '12px',
+  },
+  message: {
+    color: COLORS.olive,
+    fontSize: '13px',
+    textAlign: 'center',
+    marginBottom: '12px',
   },
   submitBtn: {
     background: 'none',
@@ -475,10 +486,27 @@ const styles = {
     color: '#c0622a',
     cursor: 'pointer',
     padding: '4px 0',
+    textAlign: 'center',
+  },
+  backLink: {
+    background: 'none',
+    border: 'none',
+    fontSize: '12px',
+    color: COLORS.textSoft,
+    cursor: 'pointer',
+    marginTop: '12px',
+    textAlign: 'center',
+    textDecoration: 'underline',
+  },
+  footer: {
+    fontSize: '13px',
+    color: COLORS.textSoft,
+    marginTop: '48px',
+    textAlign: 'center',
   },
 };
 
-// ── SVG Icons ────────────────────────────────────────────
+// ── SVG Icons ─────────────────────────────────────────────
 function GoogleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 48 48">
@@ -494,18 +522,6 @@ function AppleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 814 1000" fill="white">
       <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.3 269-317.3 70.1 0 128.4 46.4 172.5 46.4 42.8 0 109.6-49 192.5-49 34.2.1 98.1 3.4 148.6 50zm-186-193.3c35.6-44.1 61-105.5 61-166.9 0-8.3-.6-16.6-2-24.3-57.5 2.2-126.7 38.2-167.4 86.6-32.1 37.4-63.3 98.8-63.3 161.2 0 9 1.4 18.1 2 20.9 3.8.6 10.3 1.3 16.8 1.3 51.9 0 115.3-33.5 152.9-78.8z"/>
-    </svg>
-  );
-}
-
-function DoorIcon() {
-  return (
-    <svg width="60" height="90" viewBox="0 0 60 90" fill="none">
-      <rect x="5" y="5" width="50" height="82" rx="4" fill="#c49a6c" stroke="#8b6340" strokeWidth="2"/>
-      <rect x="10" y="10" width="40" height="35" rx="2" fill="#b8895a" opacity="0.5"/>
-      <rect x="10" y="50" width="40" height="32" rx="2" fill="#b8895a" opacity="0.5"/>
-      <circle cx="42" cy="47" r="3" fill="#8b6340"/>
-      <rect x="2" y="83" width="56" height="4" rx="2" fill="#8b6340"/>
     </svg>
   );
 }

@@ -3,23 +3,7 @@ import { supabase } from './supabaseClient'
 import BookDetail from './BookDetail'
 import Login from './Login'
 import AddBook from './AddBook'
-
-const COLORS = {
-  bg: '#F5F2EB',
-  surface: '#f1eee9',
-  surfaceStrong: '#FFFFFF',
-  cardBg: '#e1e0dc',
-  coverBg: '#EEE9E0',
-  border: '#E4DED5',
-  olive: '#80836f',
-  oliveSoft: '#B0ACA6',
-  text: '#2C2A25',
-  textSoft: '#9C9890',
-  gold: '#C8C0B4',
-  secondaryBtn: '#EAE6E0',
-  tagBg: '#E4E0D8',
-  shadow: '0 8px 20px rgba(60, 50, 40, 0.06)'
-}
+import { COLORS } from './colors'
 
 const RATING_OPTIONS = [
   { value: 'all', label: 'All Ratings' },
@@ -58,13 +42,23 @@ const SORT_PILL_LABELS = {
 
 const STATUS_OPTIONS = ['All Status', 'Not Started', 'Reading', 'Completed']
 
+const useWindowWidth = () => {
+  const [width, setWidth] = useState(window.innerWidth)
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  return width
+}
+
 function App() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
   const [books, setBooks] = useState([])
   const [selectedBook, setSelectedBook] = useState(null)
   const [isbn, setIsbn] = useState('')
-  const [view, setView] = useState('library')
+  const [activeTab, setActiveTab] = useState('library')
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [genreFilter, setGenreFilter] = useState('All Genres')
@@ -77,6 +71,9 @@ function App() {
   const [pendingBooks, setPendingBooks] = useState([])
   const dropdownRef = useRef(null)
   const accountMenuRef = useRef(null)
+  const width = useWindowWidth()
+  const isMobile = width < 640
+  const styles = makeStyles(isMobile, width)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -84,7 +81,6 @@ function App() {
       setLoading(false)
       if (session?.user) fetchBooks(session)
     })
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
       setLoading(false)
@@ -95,7 +91,6 @@ function App() {
         setSelectedBook(null)
       }
     })
-
     return () => subscription.unsubscribe()
   }, [])
 
@@ -192,7 +187,6 @@ function App() {
       const matchesStatus = statusFilter === 'All Status' || status === statusFilter
       return matchesGenre && matchesStatus && matchesRatingFilter(book)
     })
-
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'rating_asc': return (a.rating ?? -1) - (b.rating ?? -1)
@@ -212,16 +206,12 @@ function App() {
   }, [books, genreFilter, statusFilter, ratingFilter, sortBy])
 
   const searchBook = async () => {
-    console.log('isbn value is:', isbn) // ADD THIS
-
     if (!isbn.trim() || !session?.user) {
       setMessage('Please log in and enter an ISBN or title.')
       return
     }
-
     setSubmitting(true)
     setMessage('Searching...')
-
     const cleanInput = isbn.trim().replace(/[-\s]/g, '')
     let query
     if (/^\d{10,13}$/.test(cleanInput)) {
@@ -229,20 +219,16 @@ function App() {
     } else {
       query = `intitle:${isbn.trim()}`
     }
-
     try {
       const res = await fetch(
         `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&orderBy=relevance&key=${import.meta.env.VITE_GOOGLE_BOOKS_API_KEY}`
       )
       const data = await res.json()
-      console.log('API response:', data) // remove this after confirming it works
-
       if (!data.items || data.items.length === 0) {
         setMessage('No book found.')
         setSubmitting(false)
         return
       }
-
       const results = data.items.slice(0, 5).map((item) => {
         const v = item.volumeInfo || {}
         const identifiers = v.industryIdentifiers || []
@@ -263,14 +249,12 @@ function App() {
           description: v.description || '',
         }
       })
-
       setPendingBooks(results)
       setMessage('')
     } catch (error) {
       console.error('Search error:', error)
       setMessage('Something went wrong while searching.')
     }
-
     setSubmitting(false)
   }
 
@@ -312,7 +296,7 @@ function App() {
     setIsbn('')
     setPendingBooks([])
     setMessage('Book added successfully.')
-    setView('library')
+    setActiveTab('library')
     setSubmitting(false)
   }
 
@@ -368,9 +352,7 @@ function App() {
     )
   }
 
-  if (!session) {
-    return <Login />
-  }
+  if (!session) return <Login />
 
   if (selectedBook) {
     return (
@@ -383,7 +365,7 @@ function App() {
     )
   }
 
-  if (view === 'add') {
+  if (activeTab === 'addbook') {
     return (
       <AddBook
         isbn={isbn}
@@ -394,75 +376,48 @@ function App() {
         setPendingBooks={setPendingBooks}
         message={message}
         submitting={submitting}
-        onBack={() => setView('library')}
+        onBack={() => setActiveTab('library')}
       />
-    );
+    )
   }
 
-  // ── Main Library View ─────────────────────────────────
-  return (
-    <div style={styles.page}>
-      <div style={styles.appShell}>
-
-        {/* ── Top Row ── */}
-        <div style={styles.topRow}>
-          <div>
-            <h1 style={styles.pageTitle}>My Reading Room</h1>
-          </div>
-          <div style={styles.userActions}>
-            <div style={styles.accountMenuWrap} ref={accountMenuRef}>
-              <button
-                type="button"
-                style={styles.avatarButton}
-                aria-label="Account"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowAccountMenu((prev) => !prev)
-                }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21a8 8 0 0 0-16 0" />
-                  <circle cx="12" cy="8" r="4" />
-                </svg>
-              </button>
-              {showAccountMenu && (
-                <div style={styles.accountDropdown}>
-                  <div style={styles.accountDropdownHeader}>Account</div>
-                  <div style={styles.accountDropdownEmail}>{maskedEmail}</div>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); handleLogout() }}
-                    onMouseEnter={() => setIsSignOutHovered(true)}
-                    onMouseLeave={() => setIsSignOutHovered(false)}
-                    style={{
-                      ...styles.accountDropdownItem,
-                      backgroundColor: isSignOutHovered ? COLORS.tagBg : 'transparent',
-                      color: isSignOutHovered ? COLORS.olive : COLORS.text
-                    }}
-                  >
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+  // ── Tab content ───────────────────────────────────────
+  const renderTabContent = () => {
+    if (activeTab === 'home') {
+      return (
+        <div style={styles.placeholderView}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🏠</div>
+          <p style={{ color: COLORS.textSoft, fontSize: 15 }}>Home coming soon.</p>
         </div>
+      )
+    }
+    if (activeTab === 'quotes') {
+      return (
+        <div style={styles.placeholderView}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
+          <p style={{ color: COLORS.textSoft, fontSize: 15 }}>Quotes coming soon.</p>
+        </div>
+      )
+    }
 
-        {/* ── Toolbar ── */}
-        <div style={styles.toolbar} ref={dropdownRef}>
-          <div style={styles.tabsWrap}>
-            <button type="button" onClick={() => setView('library')}
-              style={view === 'library' ? styles.tabActive : styles.tab}>
-              Library ({books.length})
-            </button>
-            <button type="button" onClick={() => setView('add')}
-              style={view === 'add' ? styles.tabActive : styles.tab}>
-              Add Book
-            </button>
+    // ── Library ───────────────────────────────────────
+    return (
+      <>
+        {/* Toast */}
+        {message && (
+          <div style={styles.toast}>
+            <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#6A8F6A',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.7rem', color: '#FFFFFF', flexShrink: 0 }}>✓</span>
+            {message}
           </div>
+        )}
 
-          <div style={styles.filterWrap}>
+        {/* ── Filters + Grid share this wrapper ── */}
+        <div style={styles.alignedContent}>
+
+          {/* Filters */}
+          <div style={styles.filterWrap} ref={dropdownRef}>
             {/* Genre */}
             <div style={styles.dropdownWrap}>
               <button type="button" style={styles.filterButton}
@@ -548,83 +503,199 @@ function App() {
           </div>
         </div>
 
-        {/* ── Toast ── */}
-        {message && (
-          <div style={styles.toast}>
-            <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#6A8F6A',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.7rem', color: '#FFFFFF', flexShrink: 0 }}>✓</span>
-            {message}
+        {/* Grid */}
+        {filteredAndSortedBooks.length === 0 ? (
+          <div style={styles.emptyState}>
+            <div style={styles.emptyTitle}>No books found</div>
+            <p style={styles.emptyText}>Try adjusting your filters or add a new book.</p>
           </div>
-        )}
-
-        {/* ── Library Grid ── */}
-        {view === 'library' && (
-          <>
-            {filteredAndSortedBooks.length === 0 ? (
-              <div style={styles.emptyState}>
-                <div style={styles.emptyTitle}>No books found</div>
-                <p style={styles.emptyText}>Try adjusting your filters or add a new book.</p>
-              </div>
-            ) : (
-              <div style={styles.gridWrap}>
-                <div style={styles.grid}>
-                  {filteredAndSortedBooks.map((book) => {
-                    const progress = getProgressPercent(book)
-                    const status = getReadingStatus(book)
-                    const circumference = Math.PI * 70
-                    const strokeDash = (progress / 100) * circumference
-                    return (
-                      <div key={book.id} style={styles.card} onClick={() => setSelectedBook(book)}>
-                        <div style={styles.coverPanel}>
-                          {book.cover_image_url ? (
-                            <img src={normalizeCoverUrl(book.cover_image_url)}
-                              alt={book.title} style={styles.cover} />
-                          ) : (
-                            <span style={styles.coverPlaceholder}>📖</span>
-                          )}
-                        </div>
-                        <p style={styles.cardTitle}>{book.title}</p>
-                        <p style={styles.cardAuthor}>{book.author}</p>
-                        {/* {renderStars(book.rating)} */}
-                        <div style={styles.progressWrap}>
-                          <div style={styles.progressArcBox}>
-                            <svg width="160" height="60" viewBox="0 0 160 60">
-                              <path d="M 10 70 A 70 60 0 0 1 150 60" fill="none"
-                                stroke={COLORS.gold} strokeWidth="6" strokeLinecap="round" />
-                              <path d="M 10 70 A 70 60 0 0 1 150 60" fill="none"
-                                stroke={COLORS.olive} strokeWidth="6" strokeLinecap="round"
-                                strokeDasharray={`${strokeDash} ${circumference}`} />
-                            </svg>
-                            <div style={styles.progressTextOverlay}>
-                              <span style={styles.progressTextLarge}>{progress}%</span>
-                              <span style={styles.progressTextSmall}>{status}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div style={styles.cardFooterCentered}>
-                          <span style={styles.genrePill}>{getGenreLabel(book.genre)}</span>
+        ) : (
+          <div style={styles.gridWrap}>
+            <div style={styles.grid}>
+              {filteredAndSortedBooks.map((book) => {
+                const progress = getProgressPercent(book)
+                const status = getReadingStatus(book)
+                const circumference = Math.PI * 70
+                const strokeDash = (progress / 100) * circumference
+                return (
+                  <div key={book.id} style={styles.card} onClick={() => setSelectedBook(book)}>
+                    <div style={styles.coverPanel}>
+                      {book.cover_image_url ? (
+                        <img src={normalizeCoverUrl(book.cover_image_url)}
+                          alt={book.title} style={styles.cover} />
+                      ) : (
+                        <span style={styles.coverPlaceholder}>📖</span>
+                      )}
+                    </div>
+                    <p style={styles.cardTitle}>{book.title}</p>
+                    <p style={styles.cardAuthor}>{book.author}</p>
+                    <div style={styles.progressWrap}>
+                      <div style={styles.progressArcBox}>
+                        <svg
+                          width={isMobile ? "120" : "160"}
+                          height={isMobile ? "45" : "60"}
+                          viewBox="0 0 160 60"
+                        >
+                          <path d="M 10 70 A 70 60 0 0 1 150 60" fill="none"
+                            stroke={COLORS.gold} strokeWidth="6" strokeLinecap="round" />
+                          <path d="M 10 70 A 70 60 0 0 1 150 60" fill="none"
+                            stroke={COLORS.olive} strokeWidth="6" strokeLinecap="round"
+                            strokeDasharray={`${strokeDash} ${circumference}`} />
+                        </svg>
+                        <div style={styles.progressTextOverlay}>
+                          <span style={styles.progressTextLarge}>{progress}%</span>
+                          <span style={styles.progressTextSmall}>{status}</span>
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
+                    </div>
+                    <div style={styles.cardFooterCentered}>
+                      <span style={styles.genrePill}>{getGenreLabel(book.genre)}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
+  // ── Main Layout ───────────────────────────────────────
+  return (
+    <div style={styles.page}>
+      <div style={styles.appShell}>
+
+        {/* ── Top Bar ── */}
+        <div style={styles.topRow}>
+          <div style={styles.logoRow}>
+            <span style={styles.logoIcon}>📖</span>
+            <span style={styles.logoText}>Commonbook</span>
+          </div>
+          <div style={styles.accountMenuWrap} ref={accountMenuRef}>
+            <button
+              type="button"
+              style={styles.avatarButton}
+              aria-label="Account"
+              onClick={(e) => { e.stopPropagation(); setShowAccountMenu((prev) => !prev) }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21a8 8 0 0 0-16 0" />
+                <circle cx="12" cy="8" r="4" />
+              </svg>
+            </button>
+            {showAccountMenu && (
+              <div style={styles.accountDropdown}>
+                <div style={styles.accountDropdownHeader}>Account</div>
+                <div style={styles.accountDropdownEmail}>{maskedEmail}</div>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleLogout() }}
+                  onMouseEnter={() => setIsSignOutHovered(true)}
+                  onMouseLeave={() => setIsSignOutHovered(false)}
+                  style={{
+                    ...styles.accountDropdownItem,
+                    backgroundColor: isSignOutHovered ? COLORS.tagBg : 'transparent',
+                    color: isSignOutHovered ? COLORS.olive : COLORS.text
+                  }}
+                >
+                  Sign out
+                </button>
               </div>
             )}
-          </>
-        )}
+          </div>
+        </div>
+
+        {/* ── Page Heading ── */}
+        <h1 style={styles.pageTitle}>Personal Collection</h1>
+
+        {/* ── Tab Content ── */}
+        {renderTabContent()}
 
       </div>
+
+      {/* ── Fixed Bottom Tab Bar ── */}
+      <nav style={styles.tabBar}>
+        {[
+          { key: 'home',    label: 'HOME',     Icon: HomeIcon },
+          { key: 'library', label: 'LIBRARY',  Icon: LibraryIcon },
+          { key: 'addbook', label: 'ADD BOOK', Icon: AddBookIcon },
+          { key: 'quotes',  label: 'QUOTES',   Icon: QuotesIcon },
+        ].map(({ key, label, Icon }) => {
+          const isActive = activeTab === key
+          return (
+            <button
+              key={key}
+              type="button"
+              style={{
+                ...styles.tabItem,
+                color: isActive ? COLORS.olive : COLORS.text,
+                opacity: isActive ? 1 : 0.45,
+              }}
+              onClick={() => setActiveTab(key)}
+            >
+              <Icon active={isActive} />
+              <span style={{
+                ...styles.tabLabel,
+                color: isActive ? COLORS.olive : COLORS.text,
+                fontWeight: isActive ? 700 : 500,
+              }}>
+                {label}
+              </span>
+            </button>
+          )
+        })}
+      </nav>
     </div>
   )
 }
 
-const styles = {
+// ── Tab Icons ─────────────────────────────────────────────
+function HomeIcon({ active }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24"
+      fill={active ? COLORS.olive : COLORS.text}>
+      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+    </svg>
+  )
+}
+
+function LibraryIcon({ active }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24"
+      fill={active ? COLORS.olive : COLORS.text}>
+      <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
+    </svg>
+  )
+}
+
+function AddBookIcon({ active }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24"
+      fill={active ? COLORS.olive : COLORS.text}>
+      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+    </svg>
+  )
+}
+
+function QuotesIcon({ active }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24"
+      fill={active ? COLORS.olive : COLORS.text}>
+      <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>
+    </svg>
+  )
+}
+
+// ── Styles ────────────────────────────────────────────────
+const makeStyles = (isMobile, width) => ({
   page: {
     minHeight: '100vh',
     background: COLORS.bg,
     color: COLORS.text,
-    fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif'
+    fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
+    paddingBottom: '80px', // room for fixed tab bar
   },
   loadingScreen: {
     minHeight: '100vh',
@@ -643,29 +714,36 @@ const styles = {
   appShell: {
     maxWidth: '1280px',
     margin: '0 auto',
-    padding: '22px 24px 40px',
+    padding: isMobile ? '16px 12px 24px' : '22px 24px 24px',
     boxSizing: 'border-box',
     width: '100%',
   },
   topRow: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '16px',
-    marginBottom: '20px',
-    flexWrap: 'wrap'
+    alignItems: 'center',
+    marginBottom: '16px',
   },
-  pageTitle: {
-    margin: '0 0 4px',
-    fontSize: '2.2rem',
-    lineHeight: 1.05,
-    letterSpacing: '-0.03em'
-  },
-  userActions: {
+  logoRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    flexWrap: 'wrap'
+    gap: '7px',
+  },
+  logoIcon: { fontSize: '18px' },
+  logoText: {
+    fontFamily: "'Newsreader', Georgia, serif",
+    fontStyle: 'italic',
+    fontSize: '24px',
+    fontWeight: 700,
+    color: COLORS.commonbookLogo,
+  },
+  pageTitle: {
+    margin: '0 0 20px',
+    fontSize: isMobile ? '1.5rem' : '2.2rem',
+    fontWeight: 700,
+    lineHeight: 1.05,
+    letterSpacing: '-0.03em',
+    color: COLORS.text,
   },
   accountMenuWrap: { position: 'relative' },
   avatarButton: {
@@ -720,53 +798,30 @@ const styles = {
     appearance: 'none',
     WebkitAppearance: 'none'
   },
-  toolbar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '14px',
-    marginBottom: '24px',
-    flexWrap: 'wrap',
-    position: 'relative',
-    zIndex: 20
-  },
-  tabsWrap: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '8px',
-    background: COLORS.cardBg,
-    borderRadius: '999px',
-  },
-  tab: {
-    border: 'none',
-    background: 'transparent',
-    color: COLORS.text,
-    borderRadius: '999px',
-    padding: '8px 16px',
-    fontSize: '0.95rem',
-    fontWeight: 100,
-    cursor: 'pointer'
-  },
-  tabActive: {
-    border: 'none',
-    background: COLORS.olive,
-    color: '#FFFFFF',
-    borderRadius: '999px',
-    padding: '8px 16px',
-    fontSize: '0.95rem',
-    fontWeight: 100,
-    cursor: 'pointer'
+  alignedContent: {
+    width: isMobile ? '100%' : 'calc(3 * 300px + 2 * 24px)', // = 948px, exact grid width
+    margin: '0 auto',  // centres the whole block
   },
   filterWrap: {
     display: 'flex',
-    gap: '10px',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: isMobile ? '6px' : '12px',    // ← reasonable gap between each pill
+    // flexWrap: isMobile ? 'nowrap' : 'wrap',
+    // overflowX: isMobile ? 'auto' : 'visible',
+    width: '100%',
+    // maxWidth: isMobile ? '100%' : 'calc(3 * 300px + 2 * 24px)',
+    // paddingBottom: isMobile ? '4px' : '0',
+    marginBottom: '20px',
     position: 'relative',
-    zIndex: 30
+    zIndex: 30,
+    overflowY: 'visible',
+    overflowX: isMobile ? 'auto' : 'visible',
   },
   dropdownWrap: { position: 'relative' },
   filterButton: {
-    width: '160px',
+    flex: 1,
+    minWidth: isMobile ? '80px' : '120px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -776,12 +831,13 @@ const styles = {
     color: COLORS.text,
     borderRadius: '999px',
     padding: '8px 16px',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.82rem' : '0.95rem',
     outline: 'none',
     cursor: 'pointer'
   },
   filterButtonWide: {
-    width: '160px',
+    flex: 1,
+    minWidth: isMobile ? '80px' : '120px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -791,7 +847,7 @@ const styles = {
     color: COLORS.text,
     borderRadius: '999px',
     padding: '8px 16px',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.82rem' : '0.95rem',
     outline: 'none',
     cursor: 'pointer'
   },
@@ -868,11 +924,7 @@ const styles = {
     textAlign: 'center',
     boxShadow: COLORS.shadow
   },
-  emptyTitle: {
-    margin: '0 0 8px',
-    fontSize: '1.3rem',
-    color: COLORS.text
-  },
+  emptyTitle: { margin: '0 0 8px', fontSize: '1.3rem', color: COLORS.text },
   emptyText: { margin: 0, color: COLORS.textSoft },
   gridWrap: {
     display: 'flex',
@@ -881,15 +933,21 @@ const styles = {
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 300px)',
-    gap: '22px 24px',
-    justifyContent: 'center'
+    gridTemplateColumns: isMobile
+      ? 'repeat(2, 1fr)'
+      : width < 1024
+        ? 'repeat(2, minmax(240px, 300px))'
+        : 'repeat(3, 300px)',
+    gap: isMobile ? '12px' : '22px 24px',
+    justifyContent: 'center',
+    width: '100%',
   },
+  // ── Card (unchanged) ──
   card: {
     display: 'flex',
     flexDirection: 'column',
     background: COLORS.cardBg,
-    border: `2px solid #a9aaa4ff`,
+    border: `2px solid ${COLORS.border}`,
     borderRadius: '24px',
     padding: '8px',
     boxShadow: COLORS.shadow,
@@ -898,13 +956,13 @@ const styles = {
     boxSizing: 'border-box',
   },
   coverPanel: {
-    height: '200px',
+    height: isMobile ? '130px' : '200px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     marginBottom: '3px',
-    padding: '8px'
+    padding: isMobile ? '6px' : '8px'
   },
   cover: {
     maxWidth: '100%',
@@ -917,7 +975,7 @@ const styles = {
   },
   coverPlaceholder: { fontSize: '2rem', color: COLORS.textSoft },
   cardTitle: {
-    fontSize: '1.1rem',
+    fontSize: isMobile ? '0.82rem' : '1.1rem',
     fontWeight: 500,
     color: COLORS.text,
     marginBottom: '2px',
@@ -925,7 +983,7 @@ const styles = {
     textAlign: 'center'
   },
   cardAuthor: {
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.7rem' : '0.9rem',
     fontWeight: 400,
     color: COLORS.textSoft,
     marginBottom: '6px',
@@ -942,8 +1000,8 @@ const styles = {
   progressWrap: { display: 'flex', justifyContent: 'center', marginBottom: '12px' },
   progressArcBox: {
     position: 'relative',
-    width: '160px',
-    height: '70px',
+    width: isMobile ? '120px' : '160px',
+    height: isMobile ? '52px' : '70px',
     display: 'flex',
     justifyContent: 'center'
   },
@@ -986,7 +1044,44 @@ const styles = {
     textAlign: 'center',
     border: `1px solid ${COLORS.border}`,
     marginBottom: '10px'
-  }
-}
+  },
+  placeholderView: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '60vh',
+  },
+  // ── Bottom Tab Bar ──
+  tabBar: {
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.naviBg,
+    borderTop: `1px solid ${COLORS.border}`,
+    display: 'flex',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    padding: '8px 0 16px',
+    zIndex: 200,
+  },
+  tabItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '4px 12px',
+    minWidth: '60px',
+    fontFamily: '"Manrope", "Segoe UI", system-ui, sans-serif',
+  },
+  tabLabel: {
+    fontSize: '11px',
+    letterSpacing: '0.08em',
+  },
+})
 
 export default App

@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { FONTS, TYPE } from './theme'
+import { COLORS } from './colors';
+
 
 export default function AddBook({
   isbn, setIsbn,
@@ -51,6 +54,7 @@ export default function AddBook({
   if (pendingBooks && pendingBooks.length > 0) {
     return (
       <div style={styles.container}>
+        
         <button onClick={() => setPendingBooks([])} style={styles.backBtn}>← Back</button>
         <p style={styles.label}>SELECT A BOOK</p>
         <h1 style={styles.heading}>Which one<br />is it?</h1>
@@ -81,7 +85,7 @@ export default function AddBook({
   // ── Main add book screen ────────────────────────────
   return (
     <div style={styles.container}>
-
+      <div style={styles.inner}>   {/* ← add this */}
       {/* Header */}
       <div style={styles.header}>
         <button onClick={onBack} style={styles.backBtn}>← Back</button>
@@ -172,20 +176,28 @@ export default function AddBook({
         disabled={submitting}>
         {submitting ? 'SEARCHING...' : 'CATALOG BOOK →'}
       </button>
-
+      </div> 
     </div>
   );
 }
 
 const styles = {
   container: {
-    minHeight: '100vh',
-    backgroundColor: '#f4f0e8',
-    padding: '24px 20px 48px',
-    fontFamily: "'Inter', sans-serif",
+    // minHeight: '100vh',
+    backgroundColor: COLORS.bg,
+    // padding: '24px 20px 48px',
+    padding: '0',
+    fontFamily: FONTS.body,
     width: '100%',
-    maxWidth: '600px',
+    maxWidth: '1600px',
+    // margin: '0 auto',
+    boxSizing: 'border-box',
+  },
+  inner: {
+    maxWidth: '640px',
     margin: '0 auto',
+    padding: '24px 20px 80px',
+    width: '100%',
     boxSizing: 'border-box',
   },
   header: {
@@ -197,10 +209,10 @@ const styles = {
   backBtn: {
     background: 'none',
     border: 'none',
-    color: '#888',
+    color: COLORS.textSoft,
     cursor: 'pointer',
     fontSize: '14px',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: FONTS.body,
     letterSpacing: '0.04em',
     width: '60px',
     textAlign: 'left',
@@ -208,25 +220,25 @@ const styles = {
   },
   logo: { display: 'flex', alignItems: 'center', gap: '8px' },
   logoText: {
-    fontFamily: "'Georgia', serif",
+    fontFamily: FONTS.display,
     fontStyle: 'italic',
     fontSize: '18px',
-    color: '#1a1a1a',
+    color: COLORS.text,
   },
   titleBlock: { marginBottom: '24px' },
   label: {
     fontSize: '11px',
     fontWeight: 700,
     letterSpacing: '0.12em',
-    color: '#888',
+    color: COLORS.textSoft,
     marginBottom: '6px',
     margin: '0 0 6px',
   },
   heading: {
-    fontFamily: "'Georgia', serif",
+    fontFamily: FONTS.display,
     fontSize: '36px',
     fontWeight: 700,
-    color: '#1a1a1a',
+    color: COLORS.text,
     lineHeight: 1.15,
     margin: 0,
   },
@@ -257,47 +269,46 @@ const styles = {
     border: 'none', borderRadius: '999px',
     padding: '12px 20px', fontSize: '12px',
     fontWeight: 700, letterSpacing: '0.1em',
-    color: '#1a1a1a', cursor: 'pointer',
+    color: COLORS.text, cursor: 'pointer',
     display: 'flex', alignItems: 'center',
   },
   hint: {
     fontStyle: 'italic', fontSize: '13px',
-    color: '#888', marginBottom: '24px', lineHeight: 1.5,
+    color: COLORS.textSoft, marginBottom: '24px', lineHeight: 1.5,
   },
   dividerRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' },
-  dividerLine: { flex: 1, height: '1px', backgroundColor: '#ccc' },
-  dividerText: { fontSize: '10px', letterSpacing: '0.12em', color: '#999', whiteSpace: 'nowrap' },
+  dividerLine: { flex: 1, height: '1px', backgroundColor:COLORS.border },
+  dividerText: { fontSize: '10px', letterSpacing: '0.12em', color: COLORS.textFaint, whiteSpace: 'nowrap' },
   toggleRow: { display: 'flex', gap: '8px', marginBottom: '16px' },
   toggleActive: {
     padding: '7px 20px', borderRadius: '999px',
     border: '1.5px solid #1a1a1a',
-    backgroundColor: '#1a1a1a', color: '#fff',
+    backgroundColor: COLORS.text, color: '#fff',
     fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer',
   },
   toggleInactive: {
     padding: '7px 20px', borderRadius: '999px',
     border: '1.5px solid #ccc',
-    backgroundColor: 'transparent', color: '#888',
+    backgroundColor: 'transparent', color: COLORS.textSoft,
     fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer',
   },
   fieldGroup: { display: 'flex', flexDirection: 'column', marginBottom: '16px' },
   fieldLabel: {
     fontSize: '11px', fontWeight: 600,
-    letterSpacing: '0.1em', color: '#666', marginBottom: '6px',
+    letterSpacing: '0.1em', color: COLORS.textSoft, marginBottom: '6px',
   },
   input: {
     padding: '13px 14px',
-    border: '1.5px solid #ddd', borderRadius: '8px',
-    fontSize: '15px', backgroundColor: '#fff',
-    outline: 'none', color: '#1a1a1a',
-    fontFamily: "'Inter', sans-serif",
+    border: `1.5px solid ${COLORS.border}`, borderRadius: '8px',
+    outline: 'none', color: COLORS.text,
+    fontFamily: FONTS.body,
     boxSizing: 'border-box', width: '100%',
   },
-  error: { color: '#c0392b', fontSize: '13px', marginBottom: '12px' },
-  successMsg: { color: '#437a22', fontSize: '13px', marginBottom: '12px' },
+  error: { color: COLORS.error, fontSize: '13px', marginBottom: '12px' },
+  successMsg: { color: COLORS.success, fontSize: '13px', marginBottom: '12px' },
   catalogBtn: {
     width: '100%', padding: '16px',
-    backgroundColor: '#1a1a1a', color: '#fff',
+    backgroundcolor: COLORS.text, color: '#fff',
     border: 'none', borderRadius: '10px',
     fontSize: '13px', fontWeight: 700,
     letterSpacing: '0.12em', cursor: 'pointer',
@@ -305,7 +316,7 @@ const styles = {
   },
   resultCard: {
     display: 'flex', gap: '14px',
-    backgroundColor: '#fff', borderRadius: '12px',
+    backgroundColor: COLORS.surface, borderRadius: '12px',
     padding: '14px', marginBottom: '10px',
     cursor: 'pointer', alignItems: 'center',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
@@ -318,10 +329,10 @@ const styles = {
     width: '50px', height: '70px',
     display: 'flex', alignItems: 'center',
     justifyContent: 'center', fontSize: '24px',
-    backgroundColor: '#f0ece4', borderRadius: '4px', flexShrink: 0,
+    backgroundColor: COLORS.cardBg, borderRadius: '4px', flexShrink: 0,
   },
   resultInfo: { flex: 1 },
-  resultTitle: { fontSize: '15px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 4px' },
-  resultAuthor: { fontSize: '13px', color: '#666', margin: '0 0 4px' },
-  resultMeta: { fontSize: '12px', color: '#aaa', margin: 0 },
+  resultTitle: { fontSize: '15px', fontWeight: 600, color: COLORS.text, margin: '0 0 4px' },
+  resultAuthor: { fontSize: '13px', color: COLORS.textSoft, margin: '0 0 4px' },
+  resultMeta: { fontSize: '12px', color: COLORS.textFaint, margin: 0 },
 };
